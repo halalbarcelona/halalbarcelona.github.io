@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Halal Barcelona – Restaurants, Hotels & Muslim Travel Guide</title>
+  <meta name="description" content="The ultimate halal guide for Muslims visiting Barcelona and Spain. Find halal restaurants, Muslim-friendly hotels, mosques, and travel tips." />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --green: #1B6B45; --green-light: #2D9465; --gold: #C9963A;
+      --cream: #FAF7F2; --dark: #1A1A1A; --gray: #6B7280; --white: #FFFFFF;
+    }
+    body { font-family: 'Inter', sans-serif; background: var(--cream); color: var(--dark); line-height: 1.6; }
+    nav { background: var(--white); border-bottom: 2px solid var(--green); padding: 0 24px; display: flex; align-items: center; justify-content: space-between; height: 64px; position: sticky; top: 0; z-index: 100; }
+    .nav-logo { font-family: 'Playfair Display', serif; font-size: 1.4rem; font-weight: 900; color: var(--green); text-decoration: none; }
+    .nav-logo span { color: var(--gold); }
+    .nav-links { display: flex; gap: 28px; list-style: none; }
+    .nav-links a { text-decoration: none; color: var(--dark); font-size: 0.9rem; font-weight: 500; transition: color 0.2s; }
+    .nav-links a:hover { color: var(--green); }
+    .hero { background: linear-gradient(135deg, var(--green) 0%, #0F4028 100%); color: var(--white); padding: 80px 24px; text-align: center; position: relative; overflow: hidden; }
+    .hero::before { content: '☪'; position: absolute; font-size: 300px; opacity: 0.04; top: -60px; right: -40px; line-height: 1; }
+    .hero-eyebrow { display: inline-block; background: var(--gold); color: var(--white); font-size: 0.75rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; padding: 6px 16px; border-radius: 100px; margin-bottom: 20px; }
+    .hero h1 { font-family: 'Playfair Display', serif; font-size: clamp(2rem, 6vw, 3.8rem); font-weight: 900; line-height: 1.15; margin-bottom: 20px; max-width: 700px; margin-left: auto; margin-right: auto; }
+    .hero p { font-size: 1.1rem; opacity: 0.85; max-width: 520px; margin: 0 auto 36px; }
+    .hero-cta { display: inline-block; background: var(--gold); color: var(--white); padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 1rem; transition: transform 0.2s, box-shadow 0.2s; }
+    .hero-cta:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.2); }
+    .stats { background: var(--white); border-bottom: 1px solid #E5E7EB; padding: 20px 24px; display: flex; justify-content: center; gap: 48px; flex-wrap: wrap; }
+    .stat { text-align: center; }
+    .stat-num { font-family: 'Playfair Display', serif; font-size: 1.8rem; font-weight: 700; color: var(--green); }
+    .stat-label { font-size: 0.8rem; color: var(--gray); margin-top: 2px; }
+    section { padding: 64px 24px; max-width: 1100px; margin: 0 auto; }
+    .section-eyebrow { font-size: 0.75rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--gold); margin-bottom: 8px; }
+    .section-title { font-family: 'Playfair Display', serif; font-size: clamp(1.6rem, 4vw, 2.4rem); font-weight: 700; color: var(--dark); margin-bottom: 40px; }
+    .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px; }
+    .card { background: var(--white); border-radius: 12px; overflow: hidden; border: 1px solid #E5E7EB; transition: transform 0.2s, box-shadow 0.2s; }
+    .card:hover { transform: translateY(-4px); box-shadow: 0 12px 32px rgba(0,0,0,0.08); }
+    .card-img { height: 160px; display: flex; align-items: center; justify-content: center; font-size: 4rem; }
+    .card-img.green { background: linear-gradient(135deg, #E8F5EE, #C8EDD8); }
+    .card-img.gold  { background: linear-gradient(135deg, #FDF3E3, #F5D99B); }
+    .card-img.blue  { background: linear-gradient(135deg, #E8F0FE, #C2D4FC); }
+    .card-body { padding: 20px; }
+    .card-tag { font-size: 0.7rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--green); margin-bottom: 8px; }
+    .card h3 { font-size: 1.1rem; font-weight: 600; margin-bottom: 8px; }
+    .card p { font-size: 0.9rem; color: var(--gray); margin-bottom: 16px; }
+    .card-link { display: inline-block; color: var(--green); font-weight: 600; font-size: 0.9rem; text-decoration: none; border-bottom: 2px solid var(--green); padding-bottom: 2px; transition: color 0.2s; }
+    .card-link:hover { color: var(--gold); border-color: var(--gold); }
+    .restaurant-list { display: flex; flex-direction: column; gap: 16px; }
+    .restaurant-item { background: var(--white); border-radius: 12px; padding: 20px 24px; display: flex; align-items: center; gap: 20px; border: 1px solid #E5E7EB; transition: box-shadow 0.2s; }
+    .restaurant-item:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.06); }
+    .restaurant-icon { font-size: 2.4rem; flex-shrink: 0; }
+    .restaurant-info { flex: 1; }
+    .restaurant-info h4 { font-size: 1rem; font-weight: 600; margin-bottom: 4px; }
+    .restaurant-info p { font-size: 0.85rem; color: var(--gray); }
+    .restaurant-meta { display: flex; gap: 8px; margin-top: 6px; flex-wrap: wrap; }
+    .tag { font-size: 0.7rem; padding: 3px 10px; border-radius: 100px; font-weight: 500; }
+    .tag-green { background: #E8F5EE; color: var(--green); }
+    .tag-gold  { background: #FDF3E3; color: #A0732A; }
+    .halal-badge { display: flex; align-items: center; gap: 4px; font-size: 0.75rem; color: var(--green); font-weight: 600; background: #E8F5EE; padding: 6px 14px; border-radius: 100px; flex-shrink: 0; }
+    .tips-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; }
+    .tip-card { background: var(--white); border-radius: 12px; padding: 24px; border-left: 4px solid var(--green); }
+    .tip-icon { font-size: 2rem; margin-bottom: 12px; }
+    .tip-card h4 { font-weight: 600; margin-bottom: 8px; }
+    .tip-card p { font-size: 0.88rem; color: var(--gray); }
+    .cta-banner { background: linear-gradient(135deg, var(--green), #0F4028); border-radius: 16px; padding: 48px 40px; text-align: center; color: var(--white); margin: 0 24px 64px; max-width: 1052px; margin-left: auto; margin-right: auto; }
+    .cta-banner h2 { font-family: 'Playfair Display', serif; font-size: clamp(1.4rem, 3vw, 2rem); margin-bottom: 12px; }
+    .cta-banner p { opacity: 0.85; margin-bottom: 24px; }
+    .cta-btn { display: inline-block; background: var(--gold); color: var(--white); padding: 12px 28px; border-radius: 8px; text-decoration: none; font-weight: 600; transition: transform 0.2s; }
+    .cta-btn:hover { transform: translateY(-2px); }
+    footer { background: var(--dark); color: rgba(255,255,255,0.6); text-align: center; padding: 32px 24px; font-size: 0.85rem; }
+    footer a { color: var(--gold); text-decoration: none; }
+    @media (max-width: 600px) { .nav-links { display: none; } .stats { gap: 24px; } .restaurant-item { flex-wrap: wrap; } .cta-banner { padding: 32px 20px; } }
+  </style>
+</head>
+<body>
+<nav>
+  <a class="nav-logo" href="#">Halal<span>Barcelona</span></a>
+  <ul class="nav-links">
+    <li><a href="#restaurants">Restaurants</a></li>
+    <li><a href="#hotels">Hotels</a></li>
+    <li><a href="#guide">Travel Guide</a></li>
+    <li><a href="#tips">Tips</a></li>
+  </ul>
+</nav>
+<div class="hero">
+  <div class="hero-eyebrow">Muslim Travel Guide</div>
+  <h1>Your Complete Halal Guide to Barcelona & Spain</h1>
+  <p>Find verified halal restaurants, Muslim-friendly hotels, mosques, and everything you need for a comfortable halal trip.</p>
+  <a href="#restaurants" class="hero-cta">Explore Halal Barcelona →</a>
+</div>
+<div class="stats">
+  <div class="stat"><div class="stat-num">50+</div><div class="stat-label">Halal Restaurants</div></div>
+  <div class="stat"><div class="stat-num">20+</div><div class="stat-label">Muslim-Friendly Hotels</div></div>
+  <div class="stat"><div class="stat-num">10+</div><div class="stat-label">Mosques & Prayer Spaces</div></div>
+  <div class="stat"><div class="stat-num">100%</div><div class="stat-label">Verified Halal</div></div>
+</div>
+<section>
+  <div class="section-eyebrow">Explore</div>
+  <div class="section-title">Everything You Need in Barcelona</div>
+  <div class="cards">
+    <div class="card"><div class="card-img green">🍽️</div><div class="card-body"><div class="card-tag">Food</div><h3>Halal Restaurants</h3><p>From authentic kebabs to fine dining — all verified halal options across Barcelona neighborhoods.</p><a href="#restaurants" class="card-link">See restaurants →</a></div></div>
+    <div class="card"><div class="card-img gold">🏨</div><div class="card-body"><div class="card-tag">Stay</div><h3>Muslim-Friendly Hotels</h3><p>Hotels with halal breakfast, qibla direction, prayer mats, and no alcohol policies.</p><a href="#hotels" class="card-link">Find hotels →</a></div></div>
+    <div class="card"><div class="card-img blue">🕌</div><div class="card-body"><div class="card-tag">Worship</div><h3>Mosques & Prayer Rooms</h3><p>All mosques and prayer spaces in Barcelona with addresses, timings, and Friday prayer info.</p><a href="#guide" class="card-link">Find mosques →</a></div></div>
+  </div>
+</section>
+<section id="restaurants" style="background: var(--white); max-width:100%; padding: 64px 0;">
+  <div style="max-width:1100px; margin:0 auto; padding: 0 24px;">
+    <div class="section-eyebrow">Top Picks</div>
+    <div class="section-title">Best Halal Restaurants in Barcelona</div>
+    <div class="restaurant-list">
+      <div class="restaurant-item"><div class="restaurant-icon">🥙</div><div class="restaurant-info"><h4>Machado Döner Kebab & Pizzeria</h4><p>📍 Carrer de la Miranda 55, Cornellà de Llobregat · Authentic döner kebab, halal pizza, and more</p><div class="restaurant-meta"><span class="tag tag-green">Döner Kebab</span><span class="tag tag-green">Pizza</span><span class="tag tag-gold">Cornellà</span></div></div><div class="halal-badge">✓ Halal</div></div>
+      <div class="restaurant-item"><div class="restaurant-icon">🍛</div><div class="restaurant-info"><h4>Al-Medina Restaurant</h4><p>📍 El Raval, Barcelona · Traditional Middle Eastern cuisine in the heart of the city</p><div class="restaurant-meta"><span class="tag tag-green">Middle Eastern</span><span class="tag tag-gold">El Raval</span></div></div><div class="halal-badge">✓ Halal</div></div>
+      <div class="restaurant-item"><div class="restaurant-icon">🍖</div><div class="restaurant-info"><h4>Shawarma Palace Barcelona</h4><p>📍 Gràcia, Barcelona · Best shawarma in Barcelona, open late nights</p><div class="restaurant-meta"><span class="tag tag-green">Shawarma</span><span class="tag tag-gold">Gràcia</span></div></div><div class="halal-badge">✓ Halal</div></div>
+    </div>
+  </div>
+</section>
+<section id="hotels">
+  <div class="section-eyebrow">Where to Stay</div>
+  <div class="section-title">Muslim-Friendly Hotels in Barcelona</div>
+  <div class="cards">
+    <div class="card"><div class="card-img green">🌙</div><div class="card-body"><div class="card-tag">City Centre</div><h3>Hotels Near La Rambla</h3><p>Central location with easy access to halal restaurants and the main mosque.</p><a href="https://www.booking.com/searchresults.html?ss=Barcelona" class="card-link" target="_blank" rel="noopener">Book on Booking.com →</a></div></div>
+    <div class="card"><div class="card-img gold">⭐</div><div class="card-body"><div class="card-tag">Budget</div><h3>Affordable Muslim-Friendly Stays</h3><p>Clean, comfortable hotels under €80/night in safe neighborhoods near halal food.</p><a href="https://www.booking.com/searchresults.html?ss=Barcelona" class="card-link" target="_blank" rel="noopener">See options →</a></div></div>
+    <div class="card"><div class="card-img blue">🏖️</div><div class="card-body"><div class="card-tag">Beachside</div><h3>Hotels Near Barceloneta Beach</h3><p>Enjoy Barcelona's famous beach while staying close to halal dining options.</p><a href="https://www.booking.com/searchresults.html?ss=Barceloneta" class="card-link" target="_blank" rel="noopener">View hotels →</a></div></div>
+  </div>
+</section>
+<section id="tips" style="background: var(--white); max-width:100%; padding: 64px 0;">
+  <div style="max-width:1100px; margin:0 auto; padding: 0 24px;">
+    <div class="section-eyebrow">Travel Tips</div>
+    <div class="section-title">Muslim Travel Tips for Spain</div>
+    <div class="tips-grid">
+      <div class="tip-card"><div class="tip-icon">🕌</div><h4>Friday Prayer</h4><p>The main mosque in Barcelona is <strong>Centre Cultural Islàmic de Catalunya</strong>. Several smaller mosques operate in El Raval neighborhood.</p></div>
+      <div class="tip-card"><div class="tip-icon">🌙</div><h4>Ramadan in Barcelona</h4><p>Many halal restaurants stay open late during Ramadan. El Raval neighborhood has the highest concentration of halal eateries.</p></div>
+      <div class="tip-card"><div class="tip-icon">✈️</div><h4>Getting Around</h4><p>Barcelona has an excellent metro system. Most halal restaurants are accessible via L1 (red line) and L3 (green line).</p></div>
+      <div class="tip-card"><div class="tip-icon">🛒</div><h4>Halal Grocery Shops</h4><p>El Raval and Sant Pere neighborhoods have many halal butchers and grocery stores for self-catering travelers.</p></div>
+    </div>
+  </div>
+</section>
+<div class="cta-banner">
+  <h2>Planning Your Trip to Barcelona?</h2>
+  <p>Find the best Muslim-friendly hotels at the lowest prices — fully bookable online.</p>
+  <a href="https://www.booking.com/searchresults.html?ss=Barcelona" class="cta-btn" target="_blank" rel="noopener">Search Hotels on Booking.com →</a>
+</div>
+<footer>
+  <p>© 2026 HalalBarcelona.es · Your Muslim travel guide for Spain</p>
+  <p style="margin-top:8px;">This site contains affiliate links. We may earn a commission when you book through our links — at no extra cost to you.</p>
+</footer>
+</body>
+</html>
