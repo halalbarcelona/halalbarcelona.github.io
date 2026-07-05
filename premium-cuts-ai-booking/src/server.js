@@ -3,7 +3,7 @@ import express from 'express';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { initDb } from './db.js';
-import { createChatAgent } from './anthropicAgent.js';
+import { createChatAgent } from './geminiAgent.js';
 import { createChatRouter } from './routes/chat.js';
 import { createBookingsRouter } from './routes/bookings.js';
 
@@ -15,7 +15,7 @@ const app = express();
 app.use(express.json());
 app.use(express.static(PUBLIC_DIR));
 
-const agent = createChatAgent({ apiKey: process.env.ANTHROPIC_API_KEY });
+const agent = createChatAgent({ apiKey: process.env.GEMINI_API_KEY });
 
 app.use('/api', createChatRouter({ agent }));
 app.use('/api', createBookingsRouter());

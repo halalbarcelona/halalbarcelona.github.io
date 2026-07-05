@@ -5,9 +5,10 @@ export function createChatRouter({ agent }) {
 
   router.post('/chat', async (req, res) => {
     try {
-      const incoming = Array.isArray(req.body?.messages) ? req.body.messages : [];
-      const { reply, messages } = await agent.handleMessage(incoming);
-      res.json({ reply, messages });
+      const message = typeof req.body?.message === 'string' ? req.body.message : '';
+      const history = Array.isArray(req.body?.history) ? req.body.history : [];
+      const { reply, history: updatedHistory } = await agent.handleMessage(message, history);
+      res.json({ reply, history: updatedHistory });
     } catch (err) {
       console.error('Error in /api/chat:', err);
       res.status(500).json({ error: 'Something went wrong. Please try again.' });

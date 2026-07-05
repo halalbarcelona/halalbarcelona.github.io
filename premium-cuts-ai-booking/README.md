@@ -8,16 +8,17 @@ is viewable on a simple admin dashboard.
 
 - **Backend:** Node.js + Express
 - **Database:** SQLite (via the `sqlite3` package), a local file on disk
-- **AI:** Anthropic's Claude, via the official `@anthropic-ai/sdk`, using
-  tool-calling so the model only ever saves a booking through a well-defined
-  `book_appointment` function — it never writes to the database directly.
+- **AI:** Google's Gemini, via the official `@google/genai` SDK, using
+  function-calling so the model only ever saves a booking through a
+  well-defined `book_appointment` function — it never writes to the
+  database directly.
 - **Frontend:** plain HTML/CSS/JS served as static files by Express — no
   build step, no framework.
 
 ## How the booking flow works
 
 ```
-Browser chat UI ──POST /api/chat──► Express ──► Claude (tool-calling)
+Browser chat UI ──POST /api/chat──► Express ──► Gemini (function-calling)
                                                      │
                                           calls book_appointment
                                                      │
@@ -26,10 +27,10 @@ Browser chat UI ──POST /api/chat──► Express ──► Claude (tool-cal
 ```
 
 The server has no session store — the browser keeps the full conversation
-history in memory and resends it with every message. Claude collects the
+history in memory and resends it with every message. Gemini collects the
 customer's name, phone, service, date, and time conversationally, and only
 calls `book_appointment` once the customer has confirmed all five details.
-The handler for that tool is the only thing that ever writes to the
+The handler for that function is the only thing that ever writes to the
 database, so a saved booking always has real, validated data behind it.
 
 ## Setup
@@ -37,7 +38,7 @@ database, so a saved booking always has real, validated data behind it.
 ```bash
 cd premium-cuts-ai-booking
 npm install
-cp .env.example .env   # then add your Anthropic API key
+cp .env.example .env   # then add your Gemini API key
 npm start
 ```
 
@@ -47,8 +48,9 @@ Then open:
   the site's nav, but not password-protected either — see "Known
   limitations" below)
 
-Get an API key at [console.anthropic.com](https://console.anthropic.com/)
-and put it in `.env` as `ANTHROPIC_API_KEY`.
+Get a free API key at [aistudio.google.com/apikey](https://aistudio.google.com/apikey)
+and put it in `.env` as `GEMINI_API_KEY`. Optionally set `GEMINI_MODEL` to
+override the default (`gemini-2.5-flash`).
 
 ## Project layout
 
@@ -57,7 +59,7 @@ premium-cuts-ai-booking/
 ├── src/
 │   ├── server.js            Express app: static files, routes, DB init
 │   ├── db.js                 SQLite setup + insertBooking/getAllBookings
-│   ├── anthropicAgent.js      System prompt, book_appointment tool, chat loop
+│   ├── geminiAgent.js         System prompt, book_appointment function, chat loop
 │   └── routes/
 │       ├── chat.js           POST /api/chat
 │       └── bookings.js       GET /api/bookings
@@ -78,7 +80,7 @@ premium-cuts-ai-booking/
   authentication (even simple HTTP basic auth) before putting this in
   front of real customer data.
 - **No phone number validation/formatting** — whatever the customer tells
-  Claude is stored as-is.
+  the assistant is stored as-is.
 - **Single SQLite file, no migrations** — fine for a demo; a real
   multi-instance deployment would want a hosted database instead.
 - **No conversation persistence across page reloads** — history lives in

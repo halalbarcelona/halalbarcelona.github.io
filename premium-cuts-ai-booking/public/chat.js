@@ -4,9 +4,10 @@
   var input = document.getElementById('chat-input');
   var sendBtn = document.getElementById('chat-send');
 
-  // Full Anthropic-format message history (includes tool_use/tool_result
-  // blocks) — the server is stateless, so this is resent on every turn.
-  var apiMessages = [];
+  // Opaque conversation history returned by the server (includes function
+  // call/response turns) — the server is stateless, so this is resent
+  // on every turn.
+  var history = [];
 
   function appendBubble(role, text) {
     var bubble = document.createElement('div');
@@ -37,7 +38,6 @@
     if (!text) return;
 
     appendBubble('user', text);
-    apiMessages.push({ role: 'user', content: text });
     input.value = '';
     setBusy(true);
 
@@ -46,7 +46,7 @@
     fetch('/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ messages: apiMessages }),
+      body: JSON.stringify({ message: text, history: history }),
     })
       .then(function (res) {
         if (!res.ok) throw new Error('Request failed');
@@ -54,7 +54,7 @@
       })
       .then(function (data) {
         typingBubble.remove();
-        apiMessages = data.messages || apiMessages;
+        history = data.history || history;
         appendBubble('assistant', data.reply || "Sorry, I didn't catch that.");
       })
       .catch(function () {
