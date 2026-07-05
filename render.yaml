@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: premium-cuts-ai-booking
+    runtime: node
+    rootDir: premium-cuts-ai-booking
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GEMINI_MODEL
+        value: gemini-2.5-flash
