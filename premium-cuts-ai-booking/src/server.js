@@ -2,7 +2,7 @@ import 'dotenv/config';
 import express from 'express';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { initDb } from './db.js';
+import { ensureSetup } from './squareClient.js';
 import { createChatAgent } from './geminiAgent.js';
 import { createChatRouter } from './routes/chat.js';
 import { createBookingsRouter } from './routes/bookings.js';
@@ -24,7 +24,11 @@ app.get('/admin', (_req, res) => {
   res.sendFile(path.join(PUBLIC_DIR, 'admin.html'));
 });
 
-await initDb();
+try {
+  await ensureSetup();
+} catch (err) {
+  console.error('Square setup failed — check SQUARE_ACCESS_TOKEN and related env vars:', err);
+}
 
 app.listen(PORT, () => {
   console.log(`Premium Cuts AI booking app listening on port ${PORT}`);

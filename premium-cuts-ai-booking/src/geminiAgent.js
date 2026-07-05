@@ -1,8 +1,8 @@
 import { GoogleGenAI, Type } from '@google/genai';
-import { insertBooking } from './db.js';
+import { createSquareBooking } from './squareClient.js';
 import { VALID_SERVICES, validateBookingInput } from './bookingValidation.js';
 
-const MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+const MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash-lite';
 const MAX_TOOL_ITERATIONS = 4;
 const FALLBACK_REPLY = "Sorry, something went wrong on our end — could you say that again?";
 
@@ -49,10 +49,9 @@ async function bookAppointmentHandler(args = {}) {
   }
 
   try {
-    const { id } = await insertBooking({ name, phone, service, date, time });
-    return { success: true, bookingId: id };
+    return await createSquareBooking({ name, phone, service, date, time });
   } catch (err) {
-    console.error('Failed to save booking:', err);
+    console.error('Failed to save booking to Square:', err);
     return { success: false, error: 'The booking could not be saved. Please try again.' };
   }
 }

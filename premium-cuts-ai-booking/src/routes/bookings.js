@@ -1,5 +1,5 @@
 import express from 'express';
-import { getAllBookings, insertBooking } from '../db.js';
+import { listSquareBookings, createSquareBooking } from '../squareClient.js';
 import { validateBookingInput } from '../bookingValidation.js';
 
 export function createBookingsRouter() {
@@ -7,7 +7,7 @@ export function createBookingsRouter() {
 
   router.get('/bookings', async (_req, res) => {
     try {
-      const bookings = await getAllBookings();
+      const bookings = await listSquareBookings();
       res.json(bookings);
     } catch (err) {
       console.error('Error in GET /api/bookings:', err);
@@ -27,8 +27,12 @@ export function createBookingsRouter() {
     }
 
     try {
-      const { id } = await insertBooking({ name, phone, service, date, time });
-      res.status(201).json({ success: true, bookingId: id });
+      const result = await createSquareBooking({ name, phone, service, date, time });
+      if (!result.success) {
+        res.status(422).json({ error: result.error });
+        return;
+      }
+      res.status(201).json(result);
     } catch (err) {
       console.error('Error in POST /api/bookings:', err);
       res.status(500).json({ error: 'The booking could not be saved. Please try again.' });
