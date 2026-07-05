@@ -1,10 +1,10 @@
 import { GoogleGenAI, Type } from '@google/genai';
 import { insertBooking } from './db.js';
+import { VALID_SERVICES, validateBookingInput } from './bookingValidation.js';
 
 const MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
 const MAX_TOOL_ITERATIONS = 4;
 const FALLBACK_REPLY = "Sorry, something went wrong on our end — could you say that again?";
-const VALID_SERVICES = ['Haircut', 'Beard Trim', 'Both'];
 
 const SYSTEM_PROMPT = `You are the AI receptionist for Premium Cuts Barbershop, chatting with customers on the shop's website.
 
@@ -43,11 +43,9 @@ const bookAppointmentDeclaration = {
 async function bookAppointmentHandler(args = {}) {
   const { name, phone, service, date, time } = args;
 
-  if (!name || !phone || !service || !date || !time) {
-    return { success: false, error: 'One or more required booking details are missing.' };
-  }
-  if (!VALID_SERVICES.includes(service)) {
-    return { success: false, error: `service must be one of: ${VALID_SERVICES.join(', ')}.` };
+  const validation = validateBookingInput(args);
+  if (!validation.valid) {
+    return { success: false, error: validation.error };
   }
 
   try {

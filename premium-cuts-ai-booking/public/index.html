@@ -23,12 +23,17 @@
   <main>
     <div style="width:100%; display:flex; flex-direction:column; align-items:center;">
       <div class="page-intro">
-        <p class="eyebrow">Chat to Book</p>
+        <p class="eyebrow">Two Ways to Book</p>
         <h1>Book Your Appointment</h1>
-        <p>Chat with our AI receptionist below — tell it what you'd like, and it'll get you booked in.</p>
+        <p>Chat with our AI receptionist, or skip the small talk and fill in the form yourself — whichever you prefer.</p>
       </div>
 
-      <div class="chat-shell">
+      <div class="booking-toggle" role="tablist" aria-label="Booking method">
+        <button type="button" class="toggle-btn active" id="toggle-chat" role="tab" aria-selected="true" aria-controls="chat-shell">Chat with Assistant</button>
+        <button type="button" class="toggle-btn" id="toggle-manual" role="tab" aria-selected="false" aria-controls="manual-shell">Book Manually</button>
+      </div>
+
+      <div class="chat-shell" id="chat-shell">
         <div class="chat-shell-header">
           <span class="status-dot"></span> Premium Cuts Assistant
         </div>
@@ -40,6 +45,64 @@
           <button type="submit" class="chat-send" id="chat-send">Send</button>
         </form>
       </div>
+
+      <div class="manual-shell" id="manual-shell" hidden>
+        <div class="chat-shell-header">
+          <span class="status-dot"></span> Manual Booking
+        </div>
+
+        <form class="manual-form" id="manual-form" novalidate>
+          <fieldset class="service-select">
+            <legend>Select a Service</legend>
+            <label class="service-option">
+              <span class="label-text"><input type="radio" name="service" value="Haircut" checked> Haircut</span>
+            </label>
+            <label class="service-option">
+              <span class="label-text"><input type="radio" name="service" value="Beard Trim"> Beard Trim</span>
+            </label>
+            <label class="service-option">
+              <span class="label-text"><input type="radio" name="service" value="Both"> Haircut + Beard</span>
+            </label>
+          </fieldset>
+
+          <div class="field-row">
+            <div class="field">
+              <label for="manual-date">Date</label>
+              <input type="date" id="manual-date" required>
+            </div>
+            <div class="field">
+              <label for="manual-time">Time</label>
+              <input type="time" id="manual-time" required>
+            </div>
+          </div>
+
+          <div class="field-row">
+            <div class="field">
+              <label for="manual-name">Name</label>
+              <input type="text" id="manual-name" placeholder="Your full name" required>
+            </div>
+            <div class="field">
+              <label for="manual-phone">Phone</label>
+              <input type="tel" id="manual-phone" placeholder="(555) 123-4567" required>
+            </div>
+          </div>
+
+          <p class="form-error" id="manual-error" hidden></p>
+          <button type="submit" class="confirm-btn" id="manual-submit">Confirm Booking</button>
+        </form>
+
+        <div class="manual-success" id="manual-success" hidden>
+          <div class="modal-check">
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M4 12.5l5 5L20 6" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <h3>Booking Confirmed!</h3>
+          <p>We'll see you then — thanks for booking with Premium Cuts.</p>
+          <dl class="modal-summary" id="manual-summary"></dl>
+          <button type="button" class="refresh-btn" id="manual-book-again">Book Another</button>
+        </div>
+      </div>
     </div>
   </main>
 
@@ -48,5 +111,7 @@
   </footer>
 
   <script src="/chat.js"></script>
+  <script src="/manual.js"></script>
+  <script src="/toggle.js"></script>
 </body>
 </html>
