@@ -3,7 +3,7 @@ import express from 'express';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { ensureSetup } from './squareClient.js';
-import { createChatAgent } from './geminiAgent.js';
+import { createChatAgent } from './miniAiAgent.js';
 import { createChatRouter } from './routes/chat.js';
 import { createBookingsRouter } from './routes/bookings.js';
 
@@ -15,7 +15,7 @@ const app = express();
 app.use(express.json());
 app.use(express.static(PUBLIC_DIR));
 
-const agent = createChatAgent({ apiKey: process.env.GEMINI_API_KEY });
+const agent = createChatAgent();
 
 app.use('/api', createChatRouter({ agent }));
 app.use('/api', createBookingsRouter());

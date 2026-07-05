@@ -1,6 +1,6 @@
 # Premium Cuts AI Booking — built by Ashworth
 
-A full-stack demo: customers either chat with an AI receptionist or fill in
+A full-stack demo: customers either chat with a booking assistant or fill in
 a plain form to book a barbershop appointment. Both paths save real
 appointments into **Square Appointments** (via the Square API) — not a
 local database — so bookings show up in Square's own dashboard too, and
@@ -12,10 +12,11 @@ persist independently of this app's hosting.
 - **Bookings:** Square, via the official `square` SDK — a real scheduling
   backend (customers, services, team members, availability, appointments),
   not a custom database.
-- **AI:** Google's Gemini, via the official `@google/genai` SDK, using
-  function-calling so the model only ever saves a booking through a
-  well-defined `book_appointment` function — it never talks to Square
-  directly.
+- **Chat assistant:** a fully local, rule-based "mini AI" (`src/miniAiAgent.js`)
+  — no external LLM, no API key, no quota, no billing. It fills five slots
+  (service, date, time, name, phone) via simple text parsing, one at a
+  time, then confirms and books through the same Square client the manual
+  form uses. See "Why not a real LLM?" below.
 - **Frontend:** plain HTML/CSS/JS served as static files by Express — no
   build step, no framework.
 
@@ -24,23 +25,40 @@ persist independently of this app's hosting.
 There are two ways to book, both landing in the same Square account:
 
 ```
-Chat tab   ──POST /api/chat─────► Express ──► Gemini (function-calling)
-                                                   │
-                                        calls book_appointment
+Chat tab   ──POST /api/chat─────► Express ──► miniAiAgent (slot-filling)
                                                    │
 Manual tab ──POST /api/bookings─► Express ─────────┼──────► Square (Bookings API)
                                         (shared validateBookingInput)
 ```
 
-The server has no session store — the browser keeps the full conversation
-history in memory and resends it with every message. Gemini collects the
-customer's name, phone, service, date, and time conversationally, and only
-calls `book_appointment` once the customer has confirmed all five details.
+The server has no session store — the browser keeps the conversation state
+(which slots are filled so far) and resends it with every message. The
+assistant asks for service, date, time, name, and phone one at a time,
+parsing free text like "tomorrow", "3pm", or "next Friday" — and only
+attempts to book once it shows a summary and the customer confirms.
 
-The manual form skips Gemini entirely and posts straight to
-`POST /api/bookings`. Both paths run the same `validateBookingInput` check
+The manual form posts straight to `POST /api/bookings`, skipping the chat
+step entirely. Both paths run the same `validateBookingInput` check
 (`src/bookingValidation.js`), and both ultimately call the same
 `src/squareClient.js` functions to talk to Square.
+
+## Why not a real LLM?
+
+This app went through Claude, then Gemini, then hit a real-world snag worth
+documenting: free-tier daily quotas and account billing issues got in the
+way of a live demo. Every external LLM API has *some* catch — either a
+capped free tier (Gemini) or no free tier at all beyond a one-time credit
+(Claude, Grok, OpenAI). For a scripted, well-defined flow like "collect
+five pieces of information and book an appointment," a small rule-based
+parser does the job without any of that — zero cost, zero quota, zero
+external dependency for the chat itself (Square is still an external
+dependency, since that's the actual booking system).
+
+The tradeoff: it's not a general-purpose conversational AI. It won't
+answer open-ended questions about the shop, and its date/time parsing,
+while covering common phrasings ("tomorrow," "next Friday," "July 10,"
+"3pm," "15:30"), isn't as flexible as a real LLM. If a phrase isn't
+recognized, it asks again with an example format rather than guessing.
 
 ## First boot: auto-setup
 
@@ -59,14 +77,12 @@ have to manually create services or staff in Square's dashboard first
 
 ## Setup
 
-1. Get a free Gemini API key at [aistudio.google.com/apikey](https://aistudio.google.com/apikey).
-2. Create a [Square Developer account](https://developer.squareup.com/),
+1. Create a [Square Developer account](https://developer.squareup.com/),
    create an Application, and grab the **Sandbox Access Token** from your
    application's dashboard (no business verification needed to start in
    Sandbox).
-3. Copy `.env.example` to `.env` and fill in `GEMINI_API_KEY` and
-   `SQUARE_ACCESS_TOKEN`.
-4. `npm install && npm start`, then open http://localhost:3000.
+2. Copy `.env.example` to `.env` and fill in `SQUARE_ACCESS_TOKEN`.
+3. `npm install && npm start`, then open http://localhost:3000.
 
 On first boot, check the server logs — it'll print what it created/found
 in Square (services, team member, location).
@@ -86,20 +102,14 @@ in Square (services, team member, location).
 - **No proactive availability check.** The app doesn't search Square for
   open slots before proposing a time — it just attempts to create the
   booking, and Square rejects conflicting times with an error the customer
-  sees. Deliberately kept simple to avoid extra Gemini calls (Gemini's free
-  tier has a daily quota — see below).
+  sees.
 - **`/admin` has no authentication.** It's "hidden" only in the sense that
   it isn't linked anywhere — anyone who finds the URL can view all
   bookings. Add real authentication before putting this in front of real
   customer data.
-- **Gemini's free tier has a daily request quota.** It's shared across all
-  customers using the chat (not per-customer). `gemini-2.5-flash-lite` (the
-  default) has a much higher free quota than the full `gemini-2.5-flash`
-  model, which should be plenty for demoing and light real use — but a
-  genuinely busy shop would eventually want billing enabled on the Google
-  Cloud project behind the key to remove the cap entirely (Flash-Lite is
-  very cheap per conversation). The manual booking form doesn't use Gemini
-  at all, so it's unaffected by this.
+- **The chat assistant is rule-based, not a real LLM** — see "Why not a
+  real LLM?" above for the tradeoff. The manual booking form is always
+  available as a fallback that doesn't depend on any parsing at all.
 
 ## Get a public link (deploy to Render — one click)
 
@@ -109,9 +119,9 @@ This repo includes a `render.yaml` Blueprint at its root:
    the `halalbarcelona/halalbarcelona.github.io` repo (branch
    `claude/untitled-nt7egw`, unless it's since been merged to the default
    branch).
-2. Render reads `render.yaml` and pre-fills the service config. Fill in
-   `GEMINI_API_KEY` and add `SQUARE_ACCESS_TOKEN` (and optionally
-   `SQUARE_ENVIRONMENT` / `SQUARE_LOCATION_ID`) as environment variables.
+2. Render reads `render.yaml` and pre-fills the service config. Add
+   `SQUARE_ACCESS_TOKEN` (and optionally `SQUARE_ENVIRONMENT` /
+   `SQUARE_LOCATION_ID`) as environment variables.
 3. Click **Deploy**. Render gives you a public URL once it finishes
    building.
 
@@ -122,7 +132,7 @@ Visit that URL for the chat booking page, and `/admin` for the dashboard.
 ```bash
 cd premium-cuts-ai-booking
 npm install
-cp .env.example .env   # then add your Gemini + Square credentials
+cp .env.example .env   # then add your Square credentials
 npm start
 ```
 
@@ -138,7 +148,7 @@ premium-cuts-ai-booking/
 │   ├── server.js              Express app: static files, routes, Square setup on boot
 │   ├── squareClient.js         Square SDK wrapper: auto-setup, createBooking, listBookings
 │   ├── bookingValidation.js    Shared validation used by both booking paths
-│   ├── geminiAgent.js          System prompt, book_appointment function, chat loop
+│   ├── miniAiAgent.js          Local rule-based slot-filling chat assistant
 │   └── routes/
 │       ├── chat.js             POST /api/chat
 │       └── bookings.js         GET + POST /api/bookings
