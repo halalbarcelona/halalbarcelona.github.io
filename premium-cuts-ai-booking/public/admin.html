@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Admin — Premium Cuts Bookings</title>
+<link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+
+  <header class="site-header">
+    <div class="ashworth-mark">
+      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <rect class="ashworth-mark-stroke" x="5" y="5" width="14" height="14" rx="2" stroke-width="1.6" transform="rotate(45 12 12)"/>
+      </svg>
+      <span class="ashworth-wordmark">Ashworth</span>
+    </div>
+    <div class="header-divider"></div>
+    <span class="client-name">Premium Cuts Barbershop</span>
+    <span class="header-tag">Admin Dashboard</span>
+  </header>
+
+  <main>
+    <div class="admin-shell">
+      <div class="admin-card">
+        <div class="admin-card-header">
+          <h2>Bookings</h2>
+          <button class="refresh-btn" id="refresh-btn">Refresh</button>
+        </div>
+        <div class="table-scroll">
+          <table class="bookings-table" id="bookings-table" hidden>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Phone</th>
+                <th>Service</th>
+                <th>Date</th>
+                <th>Time</th>
+                <th>Booked At</th>
+              </tr>
+            </thead>
+            <tbody id="bookings-body"></tbody>
+          </table>
+        </div>
+        <div class="empty-state" id="empty-state">Loading bookings…</div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <span class="footer-badge">Powered by <strong>Ashworth</strong></span>
+  </footer>
+
+  <script src="/admin.js"></script>
+</body>
+</html>

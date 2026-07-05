@@ -1,0 +1,18 @@
+{
+  "name": "premium-cuts-ai-booking",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Full-stack AI booking web app for Premium Cuts Barbershop, built by Ashworth",
+  "type": "module",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.32.1",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.1",
+    "sqlite3": "^5.1.7"
+  }
+}

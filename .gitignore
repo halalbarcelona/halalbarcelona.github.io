@@ -1,3 +1,6 @@
 whatsapp-bot/node_modules/
 whatsapp-bot/.env
+premium-cuts-ai-booking/node_modules/
+premium-cuts-ai-booking/.env
+premium-cuts-ai-booking/data/*.db
 .DS_Store

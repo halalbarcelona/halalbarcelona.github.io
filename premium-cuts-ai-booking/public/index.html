@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Premium Cuts Barbershop — AI Booking</title>
+<link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+
+  <header class="site-header">
+    <div class="ashworth-mark">
+      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <rect class="ashworth-mark-stroke" x="5" y="5" width="14" height="14" rx="2" stroke-width="1.6" transform="rotate(45 12 12)"/>
+      </svg>
+      <span class="ashworth-wordmark">Ashworth</span>
+    </div>
+    <div class="header-divider"></div>
+    <span class="client-name">Premium Cuts Barbershop</span>
+    <span class="header-tag">AI Booking Demo</span>
+  </header>
+
+  <main>
+    <div style="width:100%; display:flex; flex-direction:column; align-items:center;">
+      <div class="page-intro">
+        <p class="eyebrow">Chat to Book</p>
+        <h1>Book Your Appointment</h1>
+        <p>Chat with our AI receptionist below — tell it what you'd like, and it'll get you booked in.</p>
+      </div>
+
+      <div class="chat-shell">
+        <div class="chat-shell-header">
+          <span class="status-dot"></span> Premium Cuts Assistant
+        </div>
+        <div class="chat-log" id="chat-log">
+          <div class="chat-bubble assistant">Hi! I'm the booking assistant for Premium Cuts Barbershop. I can get you scheduled — what would you like done, and when works for you?</div>
+        </div>
+        <form class="chat-input-row" id="chat-form">
+          <input type="text" id="chat-input" placeholder="Type your message…" autocomplete="off" autofocus>
+          <button type="submit" class="chat-send" id="chat-send">Send</button>
+        </form>
+      </div>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <span class="footer-badge">Powered by <strong>Ashworth</strong></span>
+  </footer>
+
+  <script src="/chat.js"></script>
+</body>
+</html>
