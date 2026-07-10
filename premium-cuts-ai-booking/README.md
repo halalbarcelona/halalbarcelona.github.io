@@ -12,11 +12,15 @@ persist independently of this app's hosting.
 - **Bookings:** Square, via the official `square` SDK — a real scheduling
   backend (customers, services, team members, availability, appointments),
   not a custom database.
-- **Chat assistant:** a fully local, rule-based "mini AI" (`src/miniAiAgent.js`)
-  — no external LLM, no API key, no quota, no billing. It fills five slots
-  (service, date, time, name, phone) via simple text parsing, one at a
-  time, then confirms and books through the same Square client the manual
-  form uses. See "Why not a real LLM?" below.
+- **Chat assistant:** a fully local, rule-based "mini AI" — no external LLM,
+  no API key, no quota, no billing — split across `src/nlu.js` (parsing/
+  detection) and `src/miniAiAgent.js` (conversation orchestration). It
+  extracts *all* the slots it can from a single message ("haircut tomorrow
+  at 3pm, I'm John, 555-1234" fills everything in one turn), tolerates
+  typos, answers FAQs about hours/pricing/location mid-conversation,
+  accepts corrections at any point ("actually make it Saturday instead"),
+  and rejects past dates or days the shop is closed before ever reaching
+  Square. See "Why not a real LLM?" below.
 - **Frontend:** plain HTML/CSS/JS served as static files by Express — no
   build step, no framework.
 
@@ -32,10 +36,25 @@ Manual tab ──POST /api/bookings─► Express ─────────┼
 ```
 
 The server has no session store — the browser keeps the conversation state
-(which slots are filled so far) and resends it with every message. The
-assistant asks for service, date, time, name, and phone one at a time,
-parsing free text like "tomorrow", "3pm", or "next Friday" — and only
-attempts to book once it shows a summary and the customer confirms.
+(which slots are filled so far) and resends it with every message. Each
+turn, the assistant tries to pull *any* recognizable details out of the
+whole message (service, date, time, phone, and explicit name mentions like
+"I'm John"), not just whatever it last asked about — so a customer who
+front-loads everything into one message gets it all filled in one shot,
+while someone who answers one question at a time gets guided through it
+naturally. It only attempts to book once it's shown a full summary and the
+customer has explicitly confirmed.
+
+A few things that make it feel less like a form and more like an agent:
+- **Typo tolerance:** "haircutt" or "berad trim" still match correctly.
+- **FAQ answers mid-flow:** asking "how much is a beard trim?" gets a real
+  price answer and the conversation keeps going afterward.
+- **Corrections anytime:** "actually make it Saturday instead" updates the
+  date even if you're now three questions further along, with a short
+  acknowledgment ("Got it, updated the date to Saturday.").
+- **Business-aware validation:** a past date or a day the shop is closed
+  (see `src/shopInfo.js`) gets rejected with an explanation, not silently
+  accepted and only failing later at Square.
 
 The manual form posts straight to `POST /api/bookings`, skipping the chat
 step entirely. Both paths run the same `validateBookingInput` check
@@ -54,11 +73,13 @@ parser does the job without any of that — zero cost, zero quota, zero
 external dependency for the chat itself (Square is still an external
 dependency, since that's the actual booking system).
 
-The tradeoff: it's not a general-purpose conversational AI. It won't
-answer open-ended questions about the shop, and its date/time parsing,
-while covering common phrasings ("tomorrow," "next Friday," "July 10,"
-"3pm," "15:30"), isn't as flexible as a real LLM. If a phrase isn't
-recognized, it asks again with an example format rather than guessing.
+The tradeoff: it's still not a general-purpose conversational AI. It
+answers a fixed set of FAQs (hours, pricing, services, location) rather
+than anything you could ask a real person, and its date/time parsing,
+while covering a lot of ground ("tomorrow," "next Friday," "July 10th,"
+"in 3 days," "this weekend," "3pm," "half past 3," "quarter to 4"), isn't
+as flexible as a real LLM. If a phrase isn't recognized, it asks again with
+an example format rather than guessing.
 
 ## First boot: auto-setup
 
@@ -148,7 +169,9 @@ premium-cuts-ai-booking/
 │   ├── server.js              Express app: static files, routes, Square setup on boot
 │   ├── squareClient.js         Square SDK wrapper: auto-setup, createBooking, listBookings
 │   ├── bookingValidation.js    Shared validation used by both booking paths
-│   ├── miniAiAgent.js          Local rule-based slot-filling chat assistant
+│   ├── shopInfo.js              Shop hours/prices/address — edit to match the real business
+│   ├── nlu.js                    Text parsing/detection: dates, times, services, names, intents
+│   ├── miniAiAgent.js          Conversation orchestration built on nlu.js
 │   └── routes/
 │       ├── chat.js             POST /api/chat
 │       └── bookings.js         GET + POST /api/bookings

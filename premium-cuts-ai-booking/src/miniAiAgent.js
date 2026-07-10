@@ -1,9 +1,27 @@
 import { createSquareBooking } from './squareClient.js';
+import { SHOP_INFO, isClosedOn, formatServicesList } from './shopInfo.js';
+import {
+  extractService,
+  extractDate,
+  extractTime,
+  detectVagueTimePeriod,
+  extractPhone,
+  extractNameExplicit,
+  extractNameFallback,
+  detectAffirmative,
+  detectNegative,
+  detectCancel,
+  detectCorrectionIntent,
+  detectIntent,
+} from './nlu.js';
 
 // A fully local, rule-based "mini AI" receptionist — no external LLM, no
 // API key, no quota, no billing. It fills five slots (service, date, time,
-// name, phone) via simple text parsing, one at a time, then confirms and
-// books through the same createSquareBooking used everywhere else.
+// name, phone) via layered text parsing (opportunistic multi-slot
+// extraction, then a contextual fallback for whatever was just asked),
+// answers shop FAQs along the way, allows corrections at any point, and
+// validates dates against the shop's real hours before booking through
+// createSquareBooking — the same function the manual form uses.
 
 const SLOT_ORDER = ['service', 'date', 'time', 'name', 'phone'];
 
@@ -35,15 +53,6 @@ const CLARIFY_PROMPTS = {
   phone: "Sorry, that didn't look like a phone number — could you send it again? e.g. 555-123-4567",
 };
 
-const AFFIRMATIVE = ['yes', 'yeah', 'yep', 'yup', 'correct', 'confirm', 'confirmed', 'sure', 'ok', 'okay', 'perfect', 'great', 'sounds good', 'that works', 'looks good'];
-const NEGATIVE = ['no', 'nope', 'cancel', 'start over', 'restart', "that's wrong", 'wrong'];
-
-const WEEKDAYS = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
-const MONTHS = [
-  'january', 'february', 'march', 'april', 'may', 'june',
-  'july', 'august', 'september', 'october', 'november', 'december',
-];
-
 function pick(list, seed) {
   return list[seed % list.length];
 }
@@ -56,129 +65,8 @@ function freshState() {
   };
 }
 
-function normalize(text) {
-  return String(text || '').toLowerCase().trim();
-}
-
-function containsWord(text, word) {
-  return new RegExp(`\\b${word}\\b`, 'i').test(text);
-}
-
-function detectAffirmative(text) {
-  const t = normalize(text);
-  return AFFIRMATIVE.some((w) => t === w || t.includes(w));
-}
-
-function detectNegative(text) {
-  const t = normalize(text);
-  return NEGATIVE.some((w) => t === w || t.includes(w));
-}
-
-function extractService(text) {
-  const t = normalize(text);
-  if (containsWord(t, 'both') || (/hair/.test(t) && /beard/.test(t))) return 'Both';
-  if (/beard|shave|mustache|moustache/.test(t)) return 'Beard Trim';
-  if (/hair ?cut|cut my hair|trim my hair|\bhair\b/.test(t)) return 'Haircut';
-  return null;
-}
-
-function addDays(date, n) {
-  const d = new Date(date);
-  d.setDate(d.getDate() + n);
-  return d;
-}
-
-function isoDate(date) {
-  return date.toISOString().split('T')[0];
-}
-
-function extractDate(text) {
-  const t = normalize(text);
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  if (containsWord(t, 'today')) return isoDate(today);
-  if (containsWord(t, 'tomorrow')) return isoDate(addDays(today, 1));
-
-  for (let i = 0; i < WEEKDAYS.length; i += 1) {
-    const day = WEEKDAYS[i];
-    if (containsWord(t, day)) {
-      const todayIdx = today.getDay();
-      let diff = (i - todayIdx + 7) % 7;
-      if (diff === 0) {
-        diff = /next/.test(t) ? 7 : 0;
-      } else if (/next/.test(t)) {
-        diff += 7;
-      }
-      return isoDate(addDays(today, diff));
-    }
-  }
-
-  const isoMatch = t.match(/(\d{4})-(\d{1,2})-(\d{1,2})/);
-  if (isoMatch) {
-    const [, y, m, d] = isoMatch;
-    return isoDate(new Date(Number(y), Number(m) - 1, Number(d)));
-  }
-
-  const slashMatch = t.match(/\b(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?\b/);
-  if (slashMatch) {
-    const [, mm, dd, yy] = slashMatch;
-    const year = yy ? (yy.length === 2 ? 2000 + Number(yy) : Number(yy)) : today.getFullYear();
-    return isoDate(new Date(year, Number(mm) - 1, Number(dd)));
-  }
-
-  for (let i = 0; i < MONTHS.length; i += 1) {
-    const month = MONTHS[i];
-    if (!t.includes(month.slice(0, 3))) continue;
-    const monthPattern = new RegExp(`${month}[a-z]*\\s+(\\d{1,2})`);
-    const dayFirstPattern = new RegExp(`(\\d{1,2})\\w*\\s+${month}`);
-    const m1 = t.match(monthPattern);
-    const m2 = t.match(dayFirstPattern);
-    const dayNum = m1 ? Number(m1[1]) : m2 ? Number(m2[1]) : null;
-    if (dayNum && dayNum >= 1 && dayNum <= 31) {
-      const year = today.getFullYear();
-      let candidate = new Date(year, i, dayNum);
-      if (candidate < today) candidate = new Date(year + 1, i, dayNum);
-      return isoDate(candidate);
-    }
-  }
-
-  return null;
-}
-
-function extractTime(text) {
-  const t = normalize(text);
-  if (containsWord(t, 'noon')) return '12:00';
-  if (containsWord(t, 'midnight')) return '00:00';
-
-  const m = t.match(/\b(\d{1,2})(?::(\d{2}))?\s*(am|pm)\b/) || t.match(/\b(\d{1,2}):(\d{2})\b/);
-  if (!m) return null;
-
-  let hour = Number(m[1]);
-  const minute = m[2] ? Number(m[2]) : 0;
-  const ampm = m[3];
-
-  if (hour > 23 || minute > 59) return null;
-  if (ampm === 'pm' && hour < 12) hour += 12;
-  if (ampm === 'am' && hour === 12) hour = 0;
-
-  return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
-}
-
-function extractPhone(text) {
-  const match = text.match(/(\+?\d[\d .\-()]{5,}\d)/);
-  if (!match) return null;
-  const digitsOnly = match[1].replace(/\D/g, '');
-  if (digitsOnly.length < 7 || digitsOnly.length > 15) return null;
-  return match[1].trim();
-}
-
-function extractName(text) {
-  let cleaned = String(text || '').trim();
-  cleaned = cleaned.replace(/^(it'?s|i'?m|my name is|this is|i am)\s+/i, '').trim();
-  if (!cleaned || cleaned.length > 60) return null;
-  if (/^[\d\s\-().+]+$/.test(cleaned)) return null;
-  return cleaned;
+function capitalize(str) {
+  return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
 function formatDateForReply(iso) {
@@ -210,26 +98,119 @@ function buildSummary(slots) {
   );
 }
 
-function tryApplyCorrection(state, text) {
+function joinReply(interjection, mainReply) {
+  return interjection ? `${interjection} ${mainReply}` : mainReply;
+}
+
+function describeCorrection(appliedSlots, slots) {
+  if (appliedSlots.length === 0) return '';
+  const labels = {
+    service: () => `service to ${slots.service}`,
+    date: () => `date to ${formatDateForReply(slots.date)}`,
+    time: () => `time to ${formatTimeForReply(slots.time)}`,
+    name: () => `name to ${slots.name}`,
+    phone: () => `phone to ${slots.phone}`,
+  };
+  const parts = appliedSlots.map((slot) => labels[slot]());
+  return `Got it, updated the ${parts.join(' and ')}.`;
+}
+
+function answerIntent(intent) {
+  switch (intent) {
+    case 'greeting':
+      return `Hey there! Welcome to ${SHOP_INFO.name}.`;
+    case 'thanks':
+      return "You're welcome!";
+    case 'hours':
+      return `We're open ${SHOP_INFO.hoursText}.`;
+    case 'price':
+      return `Here's our pricing: ${formatServicesList()}.`;
+    case 'services':
+      return `We offer: ${formatServicesList()}.`;
+    case 'location':
+      return `We're located at ${SHOP_INFO.address}.`;
+    case 'help':
+      return "I can help you book an appointment — just tell me what service you'd like, or ask about our hours, pricing, or location.";
+    default:
+      return '';
+  }
+}
+
+function validateDate(iso) {
+  const d = new Date(`${iso}T00:00:00`);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  if (d < today) {
+    return { ok: false, message: "That date's already passed — could you give me an upcoming date?" };
+  }
+  if (isClosedOn(d)) {
+    const dayName = d.toLocaleDateString('en-US', { weekday: 'long' });
+    return { ok: false, message: `We're closed on ${dayName}s — could you pick another day? We're open ${SHOP_INFO.hoursText}.` };
+  }
+  return { ok: true };
+}
+
+// Opportunistic multi-slot extraction, run on every message regardless of
+// what was last asked (service/date/time/phone have low false-positive
+// risk; name only via an explicit "I'm X" / "my name is X" style pattern
+// here — the permissive raw-text fallback lives in applyContextualFallback
+// and only runs when we specifically just asked for a name).
+function processTurn(state, text, { allowCorrection }) {
+  const appliedSlots = [];
+  let dateIssue = null;
+
   const svc = extractService(text);
-  const date = extractDate(text);
-  const time = extractTime(text);
-  let applied = false;
-
-  if (svc && svc !== state.slots.service) {
+  if (svc && svc !== state.slots.service && (!state.slots.service || allowCorrection)) {
     state.slots.service = svc;
-    applied = true;
-  }
-  if (date && date !== state.slots.date) {
-    state.slots.date = date;
-    applied = true;
-  }
-  if (time && time !== state.slots.time) {
-    state.slots.time = time;
-    applied = true;
+    appliedSlots.push('service');
   }
 
-  return applied;
+  const rawDate = extractDate(text);
+  if (rawDate && rawDate !== state.slots.date && (!state.slots.date || allowCorrection)) {
+    const validation = validateDate(rawDate);
+    if (validation.ok) {
+      state.slots.date = rawDate;
+      appliedSlots.push('date');
+      const tm = extractTime(text);
+      if (tm && !state.slots.time) {
+        state.slots.time = tm;
+        appliedSlots.push('time');
+      }
+    } else {
+      dateIssue = validation.message;
+    }
+  }
+
+  const rawTime = extractTime(text);
+  if (rawTime && rawTime !== state.slots.time && (!state.slots.time || allowCorrection)) {
+    state.slots.time = rawTime;
+    appliedSlots.push('time');
+  }
+
+  const phone = extractPhone(text);
+  if (phone && phone !== state.slots.phone && (!state.slots.phone || allowCorrection)) {
+    state.slots.phone = phone;
+    appliedSlots.push('phone');
+  }
+
+  const nameExplicit = extractNameExplicit(text);
+  if (nameExplicit && nameExplicit !== state.slots.name && (!state.slots.name || allowCorrection)) {
+    state.slots.name = nameExplicit;
+    appliedSlots.push('name');
+  }
+
+  return { appliedSlots, dateIssue };
+}
+
+function applyContextualFallback(state, text) {
+  if (state.lastAsked === 'name' && !state.slots.name) {
+    const n = extractNameFallback(text);
+    if (n) state.slots.name = n;
+  } else if (state.lastAsked === 'phone' && !state.slots.phone) {
+    const p = extractPhone(text);
+    if (p) state.slots.phone = p;
+  }
 }
 
 export function createChatAgent() {
@@ -246,7 +227,7 @@ export function createChatAgent() {
       return { reply: prompt, history: state };
     }
 
-    if (/cancel|start over|restart/i.test(text)) {
+    if (detectCancel(text)) {
       const fresh = { ...freshState(), lastAsked: 'service' };
       return {
         reply: "No problem, let's start fresh. What would you like done — a Haircut, Beard Trim, or Both?",
@@ -254,65 +235,86 @@ export function createChatAgent() {
       };
     }
 
-    if (!state.slots.service) {
-      const svc = extractService(text);
-      if (svc) state.slots.service = svc;
-    }
+    const intent = detectIntent(text);
+    const interjection = intent ? answerIntent(intent) : '';
 
     if (state.lastAsked === 'confirm') {
-      if (detectAffirmative(text)) {
+      if (detectAffirmative(text) && !detectNegative(text)) {
         const result = await createSquareBooking(state.slots);
         if (result.success) {
-          const reply = `You're all set, ${firstName(state.slots.name)}! ${state.slots.service} on ${formatDateForReply(state.slots.date)} at ${formatTimeForReply(state.slots.time)}. See you then!`;
+          const reply = joinReply(
+            interjection,
+            `You're all set, ${firstName(state.slots.name)}! ${state.slots.service} on ${formatDateForReply(state.slots.date)} at ${formatTimeForReply(state.slots.time)}. See you then!`
+          );
           return { reply, history: freshState() };
         }
         state.lastAsked = 'time';
         state.slots.time = null;
-        return { reply: `${result.error} What time would you like instead?`, history: state };
+        return { reply: joinReply(interjection, `${result.error} What time would you like instead?`), history: state };
       }
 
-      if (detectNegative(text)) {
+      if (detectNegative(text) && !detectAffirmative(text)) {
         const fresh = { ...freshState(), lastAsked: 'service' };
-        return { reply: "No problem — let's start over. What would you like done?", history: fresh };
+        return { reply: joinReply(interjection, "No problem — let's start over. What would you like done?"), history: fresh };
       }
 
-      if (tryApplyCorrection(state, text)) {
-        return { reply: `${buildSummary(state.slots)}\n\nDoes that look right?`, history: state };
+      const { appliedSlots, dateIssue } = processTurn(state, text, { allowCorrection: true });
+      if (dateIssue) {
+        return { reply: joinReply(interjection, dateIssue), history: state };
+      }
+      if (appliedSlots.length > 0 || intent) {
+        return { reply: joinReply(interjection, `${buildSummary(state.slots)}\n\nDoes that look right?`), history: state };
       }
 
       return { reply: 'Sorry, just to confirm — should I go ahead and book that? (yes/no)', history: state };
     }
 
-    if (state.lastAsked === 'date' && !state.slots.date) {
-      const d = extractDate(text);
-      if (d) {
-        state.slots.date = d;
-        const tm = extractTime(text);
-        if (tm) state.slots.time = tm;
-      }
-    } else if (state.lastAsked === 'time' && !state.slots.time) {
-      const tm = extractTime(text);
-      if (tm) state.slots.time = tm;
-    } else if (state.lastAsked === 'phone' && !state.slots.phone) {
-      const p = extractPhone(text);
-      if (p) state.slots.phone = p;
-    } else if (state.lastAsked === 'name' && !state.slots.name) {
-      const n = extractName(text);
-      if (n) state.slots.name = n;
+    const correctionIntent = detectCorrectionIntent(text);
+    const previouslyFilled = new Set(SLOT_ORDER.filter((slot) => state.slots[slot]));
+    const { appliedSlots, dateIssue } = processTurn(state, text, { allowCorrection: correctionIntent });
+    const corrections = appliedSlots.filter((slot) => previouslyFilled.has(slot));
+
+    // Only fall back to "treat the raw text as whatever we just asked for"
+    // when nothing else was understood this turn — otherwise a correction
+    // like "actually make it Saturday instead" (which updates the date)
+    // would also get swallowed as the name/phone we happened to be asking
+    // about next.
+    if (state.lastAsked && !state.slots[state.lastAsked] && !dateIssue && appliedSlots.length === 0) {
+      applyContextualFallback(state, text);
     }
 
     const missing = SLOT_ORDER.find((slot) => !state.slots[slot]);
 
     if (!missing) {
       state.lastAsked = 'confirm';
-      return { reply: `${buildSummary(state.slots)}\n\nDoes that look right?`, history: state };
+      return { reply: joinReply(interjection, `${buildSummary(state.slots)}\n\nDoes that look right?`), history: state };
     }
 
-    const failedToExtract = state.lastAsked === missing && state.turnCount > 1;
-    state.lastAsked = missing;
-    const prompt = failedToExtract ? CLARIFY_PROMPTS[missing] : pick(SLOT_PROMPTS[missing], state.turnCount);
+    if (dateIssue) {
+      state.lastAsked = 'date';
+      return { reply: joinReply(interjection, dateIssue), history: state };
+    }
 
-    return { reply: prompt, history: state };
+    const correctionAck = corrections.length > 0 ? describeCorrection(corrections, state.slots) : '';
+    const failedToExtract = state.lastAsked === missing && state.turnCount > 1 && appliedSlots.length === 0;
+    state.lastAsked = missing;
+
+    let prompt;
+    if (failedToExtract) {
+      if (missing === 'time') {
+        const vague = detectVagueTimePeriod(text);
+        prompt = vague
+          ? `${capitalize(vague)} works! Could you give me a specific time, like 9am or 3:30pm?`
+          : CLARIFY_PROMPTS.time;
+      } else {
+        prompt = CLARIFY_PROMPTS[missing];
+      }
+    } else {
+      prompt = pick(SLOT_PROMPTS[missing], state.turnCount);
+    }
+
+    const fullInterjection = [interjection, correctionAck].filter(Boolean).join(' ');
+    return { reply: joinReply(fullInterjection, prompt), history: state };
   }
 
   return { handleMessage };
