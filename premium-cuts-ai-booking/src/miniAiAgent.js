@@ -1,5 +1,6 @@
 import { createSquareBooking } from './squareClient.js';
-import { SHOP_INFO, isClosedOn, formatServicesList } from './shopInfo.js';
+import { SHOP_INFO, isClosedOn } from './shopInfo.js';
+import { matchKnowledge } from './knowledgeBase.js';
 import {
   extractService,
   extractDate,
@@ -12,7 +13,6 @@ import {
   detectNegative,
   detectCancel,
   detectCorrectionIntent,
-  detectIntent,
 } from './nlu.js';
 
 // A fully local, rule-based "mini AI" receptionist — no external LLM, no
@@ -183,29 +183,6 @@ function describeCorrection(appliedSlots, slots) {
   return `Got it, updated the ${parts.join(' and ')}.`;
 }
 
-function answerIntent(intent) {
-  switch (intent) {
-    case 'greeting':
-      return `Hey there! Welcome to ${SHOP_INFO.name}.`;
-    case 'thanks':
-      return "You're welcome!";
-    case 'hours':
-      return `We're open ${SHOP_INFO.hoursText}.`;
-    case 'price':
-      return `Here's our pricing: ${formatServicesList()}.`;
-    case 'services':
-      return `We offer: ${formatServicesList()}.`;
-    case 'location':
-      return `We're located at ${SHOP_INFO.address}.`;
-    case 'walkins':
-      return SHOP_INFO.walkInsPolicy;
-    case 'help':
-      return "I can help you book an appointment — just tell me what service you'd like, or ask about our hours, pricing, or location.";
-    default:
-      return '';
-  }
-}
-
 function validateDate(iso) {
   const d = new Date(`${iso}T00:00:00`);
   const today = new Date();
@@ -310,8 +287,8 @@ export function createChatAgent() {
       };
     }
 
-    const intent = detectIntent(text);
-    const interjection = intent ? answerIntent(intent) : '';
+    const knowledgeMatch = matchKnowledge(text);
+    const interjection = knowledgeMatch ? knowledgeMatch.answer : '';
 
     if (state.lastAsked === 'confirm') {
       if (detectAffirmative(text) && !detectNegative(text)) {
@@ -340,7 +317,7 @@ export function createChatAgent() {
         const message = dateIssueMessage(dateIssue, retry);
         return { reply: joinReply([interjection, capturedAck].filter(Boolean).join(' '), message), history: state };
       }
-      if (appliedSlots.length > 0 || intent) {
+      if (appliedSlots.length > 0 || knowledgeMatch) {
         return { reply: joinReply(interjection, `${buildSummary(state.slots)}\n\nDoes that look right?`), history: state };
       }
 
@@ -389,7 +366,7 @@ export function createChatAgent() {
     // as a failed attempt to answer the slot question — the customer wasn't
     // trying to answer it, so re-ask normally rather than with an
     // "I didn't catch that" tone.
-    const failedToExtract = askedSlot === missing && state.turnCount > 1 && appliedSlots.length === 0 && !intent;
+    const failedToExtract = askedSlot === missing && state.turnCount > 1 && appliedSlots.length === 0 && !knowledgeMatch;
 
     let prompt;
     if (failedToExtract) {

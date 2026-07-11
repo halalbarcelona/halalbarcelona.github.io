@@ -14,13 +14,16 @@ persist independently of this app's hosting.
   not a custom database.
 - **Chat assistant:** a fully local, rule-based "mini AI" — no external LLM,
   no API key, no quota, no billing — split across `src/nlu.js` (parsing/
-  detection) and `src/miniAiAgent.js` (conversation orchestration). It
-  extracts *all* the slots it can from a single message ("haircut tomorrow
-  at 3pm, I'm John, 555-1234" fills everything in one turn), tolerates
-  typos, answers FAQs about hours/pricing/location mid-conversation,
-  accepts corrections at any point ("actually make it Saturday instead"),
-  and rejects past dates or days the shop is closed before ever reaching
-  Square. See "Why not a real LLM?" below.
+  detection), `src/knowledgeBase.js` (~20 FAQ + grooming-knowledge topics),
+  and `src/miniAiAgent.js` (conversation orchestration). It extracts *all*
+  the slots it can from a single message ("haircut tomorrow at 3pm, I'm
+  John, 555-1234" fills everything in one turn), tolerates typos, answers
+  a broad set of questions mid-conversation — shop logistics (hours,
+  pricing, walk-ins, parking, payment, kids' cuts, cancellations) and real
+  grooming advice (haircut frequency, beard care, fade types, face-shape
+  tips) — accepts corrections at any point ("actually make it Saturday
+  instead"), and rejects past dates or days the shop is closed before ever
+  reaching Square. See "Why not a real LLM?" below.
 - **Frontend:** plain HTML/CSS/JS served as static files by Express — no
   build step, no framework.
 
@@ -184,8 +187,9 @@ premium-cuts-ai-booking/
 │   ├── squareClient.js         Square SDK wrapper: auto-setup, createBooking, listBookings
 │   ├── bookingValidation.js    Shared validation used by both booking paths
 │   ├── shopInfo.js              Shop hours/prices/address — edit to match the real business
-│   ├── nlu.js                    Text parsing/detection: dates, times, services, names, intents
-│   ├── miniAiAgent.js          Conversation orchestration built on nlu.js
+│   ├── nlu.js                    Text parsing/detection: dates, times, services, names, yes/no
+│   ├── knowledgeBase.js           FAQ + grooming-knowledge Q&A (~20 topics)
+│   ├── miniAiAgent.js          Conversation orchestration built on nlu.js + knowledgeBase.js
 │   └── routes/
 │       ├── chat.js             POST /api/chat
 │       └── bookings.js         GET + POST /api/bookings

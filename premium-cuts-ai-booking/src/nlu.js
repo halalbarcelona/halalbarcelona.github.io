@@ -43,12 +43,17 @@ function smartTitleCase(str) {
 
 // ---------- Service ----------
 
+// Deliberately does not match a bare "hair" mention — that's too loose and
+// false-positives on questions like "do you cut kids hair" (a question,
+// not a service request). Requires an actual haircut-shaped phrase.
+const HAIRCUT_PATTERN = /hair ?cut|cut my hair|trim my hair/;
+
 export function extractService(text) {
   const t = normalize(text);
 
-  if (containsWord(t, 'both') || (/hair/.test(t) && /beard/.test(t))) return 'Both';
+  if (containsWord(t, 'both') || (HAIRCUT_PATTERN.test(t) && /beard/.test(t))) return 'Both';
   if (/beard|shave|mustache|moustache/.test(t)) return 'Beard Trim';
-  if (/hair ?cut|cut my hair|trim my hair|\bhair\b/.test(t)) return 'Haircut';
+  if (HAIRCUT_PATTERN.test(t)) return 'Haircut';
 
   // Typo tolerance for common misspellings (e.g. "haircutt", "berad").
   const tokens = t.split(/\s+/);
@@ -245,17 +250,5 @@ export function detectCorrectionIntent(text) {
   return /\b(actually|wait|no i meant|change (it|that)|instead|make it|i meant)\b/i.test(text);
 }
 
-// ---------- Small talk / FAQ ----------
-
-export function detectIntent(text) {
-  const t = normalize(text);
-  if (/^(hi|hello|hey|yo|good morning|good afternoon|good evening)\b/.test(t)) return 'greeting';
-  if (/\b(thanks|thank you|appreciate it|thx)\b/.test(t)) return 'thanks';
-  if (/\b(what.*(services|offer)|services.*offer|what.*do you (do|have))\b/.test(t)) return 'services';
-  if (/\b(hours|open|close|closing|opening)\b/.test(t)) return 'hours';
-  if (/\b(prices?|costs?|how much|pricing)\b/.test(t)) return 'price';
-  if (/\b(where|address|located|location)\b/.test(t)) return 'location';
-  if (/\b(walk.?ins?|walk in|need an appointment|without (an )?appointment)\b/.test(t)) return 'walkins';
-  if (/^\s*help\s*$/.test(t)) return 'help';
-  return null;
-}
+// Small talk / FAQ detection now lives in src/knowledgeBase.js
+// (matchKnowledge), which also owns the answer text for each topic.
