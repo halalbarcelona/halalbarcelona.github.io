@@ -55,6 +55,11 @@ A few things that make it feel less like a form and more like an agent:
 - **Business-aware validation:** a past date or a day the shop is closed
   (see `src/shopInfo.js`) gets rejected with an explanation, not silently
   accepted and only failing later at Square.
+- **Nothing gets silently dropped:** if a customer gives info while the
+  assistant is still stuck re-asking about something else (e.g. a phone
+  number arrives while it's still waiting on a valid date after rejecting
+  a closed day), that gets acknowledged ("Got it — phone: ...") instead of
+  the same question just repeating with no sign it was heard.
 
 The manual form posts straight to `POST /api/bookings`, skipping the chat
 step entirely. Both paths run the same `validateBookingInput` check

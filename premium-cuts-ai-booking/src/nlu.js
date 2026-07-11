@@ -124,10 +124,14 @@ export function extractDate(text) {
   for (let i = 0; i < MONTHS.length; i += 1) {
     const month = MONTHS[i];
     if (!ordinalCleaned.includes(month.slice(0, 3))) continue;
-    const monthFirst = ordinalCleaned.match(new RegExp(`${month}[a-z]*\\s+(\\d{1,2})`));
-    const dayFirst = ordinalCleaned.match(new RegExp(`(\\d{1,2})\\w*\\s+${month}`));
+    const monthFirst = ordinalCleaned.match(new RegExp(`${month}[a-z]*\\s+(\\d{1,2})(?:,?\\s+(\\d{4}))?`));
+    const dayFirst = ordinalCleaned.match(new RegExp(`(\\d{1,2})\\w*\\s+${month}(?:,?\\s+(\\d{4}))?`));
     const dayNum = monthFirst ? Number(monthFirst[1]) : dayFirst ? Number(dayFirst[1]) : null;
+    const explicitYear = (monthFirst && monthFirst[2]) || (dayFirst && dayFirst[2]);
     if (dayNum && dayNum >= 1 && dayNum <= 31) {
+      if (explicitYear) {
+        return isoDate(new Date(Number(explicitYear), i, dayNum));
+      }
       const year = today.getFullYear();
       let candidate = new Date(year, i, dayNum);
       if (candidate < today) candidate = new Date(year + 1, i, dayNum);

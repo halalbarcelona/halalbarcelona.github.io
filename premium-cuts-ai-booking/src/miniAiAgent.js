@@ -102,6 +102,18 @@ function joinReply(interjection, mainReply) {
   return interjection ? `${interjection} ${mainReply}` : mainReply;
 }
 
+function describeCaptured(slotsList, slots) {
+  const labels = {
+    service: () => `service: ${slots.service}`,
+    date: () => `date: ${formatDateForReply(slots.date)}`,
+    time: () => `time: ${formatTimeForReply(slots.time)}`,
+    name: () => `name: ${slots.name}`,
+    phone: () => `phone: ${slots.phone}`,
+  };
+  const parts = slotsList.filter((slot) => labels[slot]).map((slot) => labels[slot]());
+  return parts.length > 0 ? `Got it — ${parts.join(', ')}.` : '';
+}
+
 function describeCorrection(appliedSlots, slots) {
   if (appliedSlots.length === 0) return '';
   const labels = {
@@ -260,7 +272,8 @@ export function createChatAgent() {
 
       const { appliedSlots, dateIssue } = processTurn(state, text, { allowCorrection: true });
       if (dateIssue) {
-        return { reply: joinReply(interjection, dateIssue), history: state };
+        const capturedAck = describeCaptured(appliedSlots, state.slots);
+        return { reply: joinReply([interjection, capturedAck].filter(Boolean).join(' '), dateIssue), history: state };
       }
       if (appliedSlots.length > 0 || intent) {
         return { reply: joinReply(interjection, `${buildSummary(state.slots)}\n\nDoes that look right?`), history: state };
@@ -292,11 +305,20 @@ export function createChatAgent() {
 
     if (dateIssue) {
       state.lastAsked = 'date';
-      return { reply: joinReply(interjection, dateIssue), history: state };
+      const capturedAck = describeCaptured(appliedSlots, state.slots);
+      return { reply: joinReply([interjection, capturedAck].filter(Boolean).join(' '), dateIssue), history: state };
     }
 
     const correctionAck = corrections.length > 0 ? describeCorrection(corrections, state.slots) : '';
-    const failedToExtract = state.lastAsked === missing && state.turnCount > 1 && appliedSlots.length === 0;
+    // Slots that got filled this turn but aren't the one we're about to
+    // (re-)ask for — e.g. the customer gave a phone number while we're
+    // still stuck re-asking for a valid date. Without this, those get
+    // silently absorbed and the same question repeats with no sign
+    // anything was heard.
+    const askedSlot = state.lastAsked;
+    const freshBonus = appliedSlots.filter((slot) => slot !== askedSlot && !corrections.includes(slot));
+    const freshAck = freshBonus.length > 0 ? describeCaptured(freshBonus, state.slots) : '';
+    const failedToExtract = askedSlot === missing && state.turnCount > 1 && appliedSlots.length === 0;
     state.lastAsked = missing;
 
     let prompt;
@@ -313,7 +335,7 @@ export function createChatAgent() {
       prompt = pick(SLOT_PROMPTS[missing], state.turnCount);
     }
 
-    const fullInterjection = [interjection, correctionAck].filter(Boolean).join(' ');
+    const fullInterjection = [interjection, correctionAck, freshAck].filter(Boolean).join(' ');
     return { reply: joinReply(fullInterjection, prompt), history: state };
   }
 
