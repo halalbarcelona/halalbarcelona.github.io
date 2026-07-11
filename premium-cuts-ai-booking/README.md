@@ -60,6 +60,15 @@ A few things that make it feel less like a form and more like an agent:
   number arrives while it's still waiting on a valid date after rejecting
   a closed day), that gets acknowledged ("Got it — phone: ...") instead of
   the same question just repeating with no sign it was heard.
+- **No repeated verbatim messages:** every clarification and rejection
+  (bad date, closed day, past date, unrecognized time) has multiple
+  phrasings that cycle on repeated attempts, instead of showing the exact
+  same sentence over and over.
+- **Realistic shop data:** `src/shopInfo.js` prices (18€ haircut / 10€ beard
+  trim / 25€ combo) reflect typical Barcelona-area neighborhood barbershop
+  rates rather than arbitrary placeholder numbers — edit them to match the
+  real business. These stay in sync with the actual prices created in
+  Square's catalog (`src/squareClient.js`).
 
 The manual form posts straight to `POST /api/bookings`, skipping the chat
 step entirely. Both paths run the same `validateBookingInput` check
@@ -79,8 +88,8 @@ external dependency for the chat itself (Square is still an external
 dependency, since that's the actual booking system).
 
 The tradeoff: it's still not a general-purpose conversational AI. It
-answers a fixed set of FAQs (hours, pricing, services, location) rather
-than anything you could ask a real person, and its date/time parsing,
+answers a fixed set of FAQs (hours, pricing, services, location, walk-ins)
+rather than anything you could ask a real person, and its date/time parsing,
 while covering a lot of ground ("tomorrow," "next Friday," "July 10th,"
 "in 3 days," "this weekend," "3pm," "half past 3," "quarter to 4"), isn't
 as flexible as a real LLM. If a phrase isn't recognized, it asks again with

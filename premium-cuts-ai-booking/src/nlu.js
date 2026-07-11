@@ -253,8 +253,9 @@ export function detectIntent(text) {
   if (/\b(thanks|thank you|appreciate it|thx)\b/.test(t)) return 'thanks';
   if (/\b(what.*(services|offer)|services.*offer|what.*do you (do|have))\b/.test(t)) return 'services';
   if (/\b(hours|open|close|closing|opening)\b/.test(t)) return 'hours';
-  if (/\b(price|cost|how much|pricing)\b/.test(t)) return 'price';
+  if (/\b(prices?|costs?|how much|pricing)\b/.test(t)) return 'price';
   if (/\b(where|address|located|location)\b/.test(t)) return 'location';
+  if (/\b(walk.?ins?|walk in|need an appointment|without (an )?appointment)\b/.test(t)) return 'walkins';
   if (/^\s*help\s*$/.test(t)) return 'help';
   return null;
 }

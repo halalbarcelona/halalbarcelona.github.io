@@ -4,15 +4,18 @@
 
 export const SHOP_INFO = {
   name: 'Premium Cuts Barbershop',
-  address: '123 Main Street, Cornellà de Llobregat',
-  phone: '(555) 123-4567',
+  address: 'Carrer Major 45, Cornellà de Llobregat, Barcelona',
+  phone: '+34 93 123 45 67',
   hoursText: 'Monday–Saturday, 9am–7pm (closed Sundays)',
   closedWeekdays: [0], // 0 = Sunday (JS Date.getDay() convention)
   cancellationPolicy: 'Please give us at least 2 hours notice if you need to cancel or reschedule.',
+  walkInsPolicy: "We take walk-ins when there's a free chair, but booking ahead guarantees your spot.",
+  // Prices reflect typical neighborhood-barbershop rates in the Barcelona
+  // area (lower than US averages) — edit to match the real business.
   services: {
-    Haircut: { price: '$28', duration: '30 min', description: 'A classic cut, wash and style.' },
-    'Beard Trim': { price: '$15', duration: '15 min', description: 'Beard shape-up and trim.' },
-    Both: { price: '$38', duration: '45 min', description: 'Haircut and beard trim together.' },
+    Haircut: { price: '18€', duration: '30 min', description: 'A classic cut, wash and style.' },
+    'Beard Trim': { price: '10€', duration: '15 min', description: 'Beard shape-up and trim.' },
+    Both: { price: '25€', duration: '45 min', description: 'Haircut and beard trim together (bundle price).' },
   },
 };
 

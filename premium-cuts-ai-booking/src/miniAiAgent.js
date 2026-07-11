@@ -45,13 +45,53 @@ const SLOT_PROMPTS = {
   ],
 };
 
+// Multiple variants per slot so repeated failures don't show the exact
+// same sentence over and over — cycled via a per-block retry counter
+// (see nextRetryCount), not just the global turn count.
 const CLARIFY_PROMPTS = {
-  service: "Sorry, I didn't catch that — is it a Haircut, Beard Trim, or Both?",
-  date: 'Sorry, I didn\'t get a date from that — try something like "tomorrow", "Friday", or "July 10".',
-  time: 'Sorry, I didn\'t get a time from that — try something like "3pm" or "15:30".',
-  name: 'Sorry, could you tell me your name again?',
-  phone: "Sorry, that didn't look like a phone number — could you send it again? e.g. 555-123-4567",
+  service: [
+    "Sorry, I didn't catch that — is it a Haircut, Beard Trim, or Both?",
+    'Just to be clear: Haircut, Beard Trim, or Both?',
+    'Hmm, I need one of the three — Haircut, Beard Trim, or Both.',
+  ],
+  date: [
+    'Sorry, I didn\'t get a date from that — try something like "tomorrow", "Friday", or "July 10".',
+    'Still need a date — something like "next Tuesday" or "July 15" works.',
+    'Let\'s try that again — a day like "Saturday" or a date like "August 3" works.',
+  ],
+  time: [
+    'Sorry, I didn\'t get a time from that — try something like "3pm" or "15:30".',
+    'Just need a time — try "2:30pm" or "14:30".',
+    'Didn\'t catch a time there — something like "10am" works.',
+  ],
+  name: [
+    'Sorry, could you tell me your name again?',
+    "Didn't quite catch that — what's your name?",
+  ],
+  phone: [
+    'Sorry, that didn\'t look like a phone number — could you send it again? e.g. 555-123-4567',
+    'Hmm, I need a valid phone number — something like 555-123-4567.',
+  ],
 };
+
+const VAGUE_TIME_PROMPTS = [
+  (period) => `${capitalize(period)} works! Could you give me a specific time, like 9am or 3:30pm?`,
+  (period) => `Great, ${period} it is — what specific time though? e.g. 10:30am.`,
+];
+
+const PAST_DATE_MESSAGES = [
+  "That date's already passed — could you give me an upcoming date?",
+  "That one's in the past! What about a date coming up?",
+  "Looks like that date's behind us — could you pick a future date?",
+];
+
+function closedDayMessages(dayName) {
+  return [
+    `We're closed on ${dayName}s — could you pick another day? We're open ${SHOP_INFO.hoursText}.`,
+    `Ah, we don't open on ${dayName}s. Any other day work? We're open ${SHOP_INFO.hoursText}.`,
+    `${dayName}s are a no-go for us — how about a different day? We're open ${SHOP_INFO.hoursText}.`,
+  ];
+}
 
 function pick(list, seed) {
   return list[seed % list.length];
@@ -62,7 +102,23 @@ function freshState() {
     slots: { service: null, date: null, time: null, name: null, phone: null },
     lastAsked: null,
     turnCount: 0,
+    blockKey: null,
+    blockRetryCount: 0,
   };
+}
+
+// Tracks how many consecutive turns have failed to move past the same
+// blocker (the same slot repeatedly failing to parse, or the same kind of
+// date rejection repeating) so repeated messages can cycle through
+// different phrasing instead of showing the identical sentence every time.
+function nextRetryCount(state, blockKey) {
+  if (state.blockKey === blockKey) {
+    state.blockRetryCount = (state.blockRetryCount || 0) + 1;
+  } else {
+    state.blockKey = blockKey;
+    state.blockRetryCount = 0;
+  }
+  return state.blockRetryCount;
 }
 
 function capitalize(str) {
@@ -141,6 +197,8 @@ function answerIntent(intent) {
       return `We offer: ${formatServicesList()}.`;
     case 'location':
       return `We're located at ${SHOP_INFO.address}.`;
+    case 'walkins':
+      return SHOP_INFO.walkInsPolicy;
     case 'help':
       return "I can help you book an appointment — just tell me what service you'd like, or ask about our hours, pricing, or location.";
     default:
@@ -154,13 +212,18 @@ function validateDate(iso) {
   today.setHours(0, 0, 0, 0);
 
   if (d < today) {
-    return { ok: false, message: "That date's already passed — could you give me an upcoming date?" };
+    return { ok: false, kind: 'past' };
   }
   if (isClosedOn(d)) {
-    const dayName = d.toLocaleDateString('en-US', { weekday: 'long' });
-    return { ok: false, message: `We're closed on ${dayName}s — could you pick another day? We're open ${SHOP_INFO.hoursText}.` };
+    return { ok: false, kind: 'closed', dayName: d.toLocaleDateString('en-US', { weekday: 'long' }) };
   }
   return { ok: true };
+}
+
+function dateIssueMessage(validation, retryCount) {
+  if (validation.kind === 'past') return pick(PAST_DATE_MESSAGES, retryCount);
+  if (validation.kind === 'closed') return pick(closedDayMessages(validation.dayName), retryCount);
+  return '';
 }
 
 // Opportunistic multi-slot extraction, run on every message regardless of
@@ -190,7 +253,7 @@ function processTurn(state, text, { allowCorrection }) {
         appliedSlots.push('time');
       }
     } else {
-      dateIssue = validation.message;
+      dateIssue = validation;
     }
   }
 
@@ -272,8 +335,10 @@ export function createChatAgent() {
 
       const { appliedSlots, dateIssue } = processTurn(state, text, { allowCorrection: true });
       if (dateIssue) {
+        const retry = nextRetryCount(state, `date:${dateIssue.kind}`);
         const capturedAck = describeCaptured(appliedSlots, state.slots);
-        return { reply: joinReply([interjection, capturedAck].filter(Boolean).join(' '), dateIssue), history: state };
+        const message = dateIssueMessage(dateIssue, retry);
+        return { reply: joinReply([interjection, capturedAck].filter(Boolean).join(' '), message), history: state };
       }
       if (appliedSlots.length > 0 || intent) {
         return { reply: joinReply(interjection, `${buildSummary(state.slots)}\n\nDoes that look right?`), history: state };
@@ -305,8 +370,10 @@ export function createChatAgent() {
 
     if (dateIssue) {
       state.lastAsked = 'date';
+      const retry = nextRetryCount(state, `date:${dateIssue.kind}`);
       const capturedAck = describeCaptured(appliedSlots, state.slots);
-      return { reply: joinReply([interjection, capturedAck].filter(Boolean).join(' '), dateIssue), history: state };
+      const message = dateIssueMessage(dateIssue, retry);
+      return { reply: joinReply([interjection, capturedAck].filter(Boolean).join(' '), message), history: state };
     }
 
     const correctionAck = corrections.length > 0 ? describeCorrection(corrections, state.slots) : '';
@@ -318,23 +385,28 @@ export function createChatAgent() {
     const askedSlot = state.lastAsked;
     const freshBonus = appliedSlots.filter((slot) => slot !== askedSlot && !corrections.includes(slot));
     const freshAck = freshBonus.length > 0 ? describeCaptured(freshBonus, state.slots) : '';
-    const failedToExtract = askedSlot === missing && state.turnCount > 1 && appliedSlots.length === 0;
-    state.lastAsked = missing;
+    // A pure FAQ/small-talk turn ("where are you located?") shouldn't count
+    // as a failed attempt to answer the slot question — the customer wasn't
+    // trying to answer it, so re-ask normally rather than with an
+    // "I didn't catch that" tone.
+    const failedToExtract = askedSlot === missing && state.turnCount > 1 && appliedSlots.length === 0 && !intent;
 
     let prompt;
     if (failedToExtract) {
+      const retry = nextRetryCount(state, `slot:${missing}`);
       if (missing === 'time') {
         const vague = detectVagueTimePeriod(text);
-        prompt = vague
-          ? `${capitalize(vague)} works! Could you give me a specific time, like 9am or 3:30pm?`
-          : CLARIFY_PROMPTS.time;
+        prompt = vague ? pick(VAGUE_TIME_PROMPTS, retry)(vague) : pick(CLARIFY_PROMPTS.time, retry);
       } else {
-        prompt = CLARIFY_PROMPTS[missing];
+        prompt = pick(CLARIFY_PROMPTS[missing], retry);
       }
     } else {
+      state.blockKey = null;
+      state.blockRetryCount = 0;
       prompt = pick(SLOT_PROMPTS[missing], state.turnCount);
     }
 
+    state.lastAsked = missing;
     const fullInterjection = [interjection, correctionAck, freshAck].filter(Boolean).join(' ');
     return { reply: joinReply(fullInterjection, prompt), history: state };
   }

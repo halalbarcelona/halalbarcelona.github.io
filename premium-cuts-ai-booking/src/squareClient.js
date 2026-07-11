@@ -2,10 +2,12 @@ import { randomUUID } from 'node:crypto';
 import { SquareClient, SquareEnvironment, SquareError } from 'square';
 import { VALID_SERVICES } from './bookingValidation.js';
 
+// Keep these in sync with src/shopInfo.js — that's what the chat quotes
+// customers, this is what actually gets created in Square's catalog.
 const SERVICE_DEFINITIONS = {
-  Haircut: { description: 'Classic haircut, wash and style.', priceCents: 2800, durationMinutes: 30 },
-  'Beard Trim': { description: 'Beard shape-up and trim.', priceCents: 1500, durationMinutes: 15 },
-  Both: { description: 'Haircut and beard trim together.', priceCents: 3800, durationMinutes: 45 },
+  Haircut: { description: 'Classic haircut, wash and style.', priceCents: 1800, durationMinutes: 30 },
+  'Beard Trim': { description: 'Beard shape-up and trim.', priceCents: 1000, durationMinutes: 15 },
+  Both: { description: 'Haircut and beard trim together.', priceCents: 2500, durationMinutes: 45 },
 };
 
 const DEFAULT_TEAM_MEMBER = { givenName: 'Alex', familyName: 'Barber' };
