@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="en">
+<html lang="es">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Admin — Premium Cuts Bookings</title>
+<title>Admin — Reservas de Premium Cuts</title>
 <link rel="stylesheet" href="/styles.css" />
 </head>
 <body>
@@ -17,39 +17,39 @@
     </div>
     <div class="header-divider"></div>
     <span class="client-name">Premium Cuts Barbershop</span>
-    <span class="header-tag">Admin Dashboard</span>
+    <span class="header-tag">Panel de Administración</span>
   </header>
 
   <main>
     <div class="admin-shell">
       <div class="admin-card">
         <div class="admin-card-header">
-          <h2>Bookings</h2>
-          <button class="refresh-btn" id="refresh-btn">Refresh</button>
+          <h2>Reservas</h2>
+          <button class="refresh-btn" id="refresh-btn">Actualizar</button>
         </div>
         <div class="table-scroll">
           <table class="bookings-table" id="bookings-table" hidden>
             <thead>
               <tr>
                 <th>ID</th>
-                <th>Name</th>
-                <th>Phone</th>
-                <th>Service</th>
-                <th>Date</th>
-                <th>Time</th>
-                <th>Booked At</th>
+                <th>Nombre</th>
+                <th>Teléfono</th>
+                <th>Servicio</th>
+                <th>Fecha</th>
+                <th>Hora</th>
+                <th>Reservado el</th>
               </tr>
             </thead>
             <tbody id="bookings-body"></tbody>
           </table>
         </div>
-        <div class="empty-state" id="empty-state">Loading bookings…</div>
+        <div class="empty-state" id="empty-state">Cargando reservas…</div>
       </div>
     </div>
   </main>
 
   <footer class="site-footer">
-    <span class="footer-badge">Powered by <strong>Ashworth</strong></span>
+    <span class="footer-badge">Desarrollado por <strong>Ashworth</strong></span>
   </footer>
 
   <script src="/admin.js"></script>

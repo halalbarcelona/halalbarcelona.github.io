@@ -6,141 +6,149 @@ import { SHOP_INFO, formatServicesList } from './shopInfo.js';
 // care, face-shape tips). Entries are checked in order; the first
 // matching pattern wins, so more specific patterns are listed before
 // broader ones. Still 100% local — no external lookups.
+//
+// Patterns match against accent-stripped, lowercased text (see
+// normalize() below) so "cuánto" and "cuanto" both work regardless of
+// whether the customer typed accents.
 
 const ENTRIES = [
-  // --- Small talk ---
+  // --- Charla informal ---
   {
     id: 'greeting',
-    pattern: /^(hi|hello|hey|yo|good morning|good afternoon|good evening)\b/,
-    answer: () => `Hey there! Welcome to ${SHOP_INFO.name}.`,
+    pattern: /^(hola|buenas|buenos dias|buenas tardes|buenas noches|ey|hey)\b/,
+    answer: () => `¡Hola! Bienvenido a ${SHOP_INFO.name}.`,
   },
   {
     id: 'howareyou',
-    pattern: /\bhow('s| is| are) (it going|you doing|you)\b/,
-    answer: () => "Doing great, thanks for asking! Ready to get you booked in whenever you are.",
+    pattern: /\bcomo (estas|va|te va|andas)\b/,
+    answer: () => '¡Muy bien, gracias por preguntar! Cuando quieras te ayudo a reservar tu cita.',
   },
   {
     id: 'thanks',
-    pattern: /\b(thanks|thank you|appreciate it|thx)\b/,
-    answer: () => "You're welcome!",
+    pattern: /\b(gracias|te lo agradezco)\b/,
+    answer: () => '¡De nada!',
   },
   {
     id: 'compliment',
-    pattern: /\b(you'?re|you are) (awesome|great|the best|amazing)\b|\bgood (bot|job)\b/,
-    answer: () => "That's kind of you to say! Let's get your visit sorted.",
+    pattern: /\beres (genial|el mejor|increible)\b|\bbuen (bot|trabajo)\b/,
+    answer: () => '¡Qué amable! Vamos a organizar tu visita.',
   },
   {
     id: 'joke',
-    pattern: /\btell me a joke\b|\bjoke\b.*(please|barber)?/,
+    pattern: /\bcuentame un chiste\b|\bchiste\b.*(por favor|barbero)?/,
     answer: () =>
-      "Why did the barber win the race? He knew a shortcut! ...okay, back to business — what can I get you booked in for?",
+      '¿Por qué el barbero ganó la carrera? ¡Porque conocía un atajo (corte)! ...vale, volvamos a lo importante — ¿qué te reservo?',
   },
 
-  // --- Shop logistics FAQs ---
+  // --- Preguntas frecuentes sobre la barbería ---
   {
     id: 'firstvisit',
-    pattern: /\bfirst (time|visit)\b/,
-    answer: () => "First time? Welcome! Just arrive a couple of minutes early and we'll take care of the rest.",
+    pattern: /\bprimera vez\b/,
+    answer: () => '¿Primera vez? ¡Bienvenido! Llega un par de minutos antes y nosotros nos encargamos del resto.',
   },
   {
     id: 'kids',
-    pattern: /\b(kid|child|children)s?\b.*\b(cut|haircut|hair)\b|\bkids? cut\b/,
+    pattern: /\b(nino|ninos|nina|ninas|infantil)\b.*\b(corte|pelo)\b|\bcorte infantil\b/,
     answer: () =>
-      "Yes, we cut kids' hair too — just mention their age when booking so we can plan enough time.",
+      'Sí, también cortamos el pelo a niños — solo menciona su edad al reservar para que podamos prever el tiempo necesario.',
   },
   {
     id: 'cancellation',
-    pattern: /\b(cancel|reschedul)/,
+    pattern: /\b(cancelar|cancelacion|reprogramar|cambiar la cita)\b/,
     answer: () => SHOP_INFO.cancellationPolicy,
   },
   {
     id: 'walkins',
-    pattern: /\b(walk.?ins?|walk in|need an appointment|without (an )?appointment)\b/,
+    pattern: /\b(sin cita|sin reserva|necesito cita previa|puedo ir sin reservar)\b/,
     answer: () => SHOP_INFO.walkInsPolicy,
   },
   {
     id: 'payment',
-    pattern: /\b(pay|payment|cash|credit card|contactless)\b|\bdo you (take|accept) cards?\b/,
-    answer: () => 'We accept cash and all major cards, including contactless.',
+    pattern: /\b(pago|pagar|efectivo|tarjeta|contactless|sin contacto)\b|\bacept[a-z]* tarjetas?\b/,
+    answer: () => 'Aceptamos efectivo y todas las tarjetas principales, incluido el pago sin contacto.',
   },
   {
     id: 'parking',
-    pattern: /\bparking\b/,
-    answer: () => "There's street parking nearby, and a public car park a short walk from the shop.",
+    pattern: /\bparking\b|\baparcamiento\b|\bdonde aparcar\b/,
+    answer: () => 'Hay aparcamiento en la calle cerca de la barbería, y un parking público a poca distancia andando.',
   },
   {
     id: 'phone_contact',
-    pattern: /\b(phone number|call you|your number|contact number)\b/,
-    answer: () => `You can reach us at ${SHOP_INFO.phone}.`,
+    pattern: /\b(numero de telefono|llamaros|vuestro numero|numero de contacto)\b/,
+    answer: () => `Puedes contactarnos en el ${SHOP_INFO.phone}.`,
   },
   {
     id: 'products',
-    pattern: /\b(what products|which products|what brand)\b/,
-    answer: () => 'We use professional-grade grooming products for every cut and trim.',
+    pattern: /\b(que productos|que marca|con que productos)\b/,
+    answer: () => 'Usamos productos de peluquería profesionales en cada corte y recorte.',
   },
   {
     id: 'services',
-    pattern: /\b(what.*(services|offer)|services.*offer|what.*do you (do|have))\b/,
-    answer: () => `We offer: ${formatServicesList()}.`,
+    pattern: /\b(que servicios|servicios ofreceis|que haceis|que hac[eé]is)\b/,
+    answer: () => `Ofrecemos: ${formatServicesList()}.`,
   },
   {
     id: 'hours',
-    pattern: /\b(hours|open|close|closing|opening)\b/,
-    answer: () => `We're open ${SHOP_INFO.hoursText}.`,
+    pattern: /\b(horario|horarios|abrir|abris|cerrar|cerrais|abierto|cerrado)\b/,
+    answer: () => `Abrimos ${SHOP_INFO.hoursText}.`,
   },
   {
     id: 'price',
-    pattern: /\b(prices?|costs?|how much|pricing)\b/,
-    answer: () => `Here's our pricing: ${formatServicesList()}.`,
+    pattern: /\b(precio|precios|cuesta|cuanto vale|tarifa|tarifas)\b/,
+    answer: () => `Estos son nuestros precios: ${formatServicesList()}.`,
   },
   {
     id: 'location',
-    pattern: /\b(where|address|located|location)\b/,
-    answer: () => `We're located at ${SHOP_INFO.address}.`,
+    pattern: /\b(donde estais|direccion|ubicacion|donde os encontramos|donde queda)\b/,
+    answer: () => `Estamos en ${SHOP_INFO.address}.`,
   },
 
-  // --- General grooming knowledge (real advice, not business-specific) ---
+  // --- Conocimiento general de peluquería (consejos reales, no específicos del negocio) ---
   {
     id: 'haircut_frequency',
-    pattern: /how often.*(haircut|cut my hair|get (a )?(hair)?cut)/,
+    pattern: /cada cuanto.*(corte|cortarme el pelo|cortar el pelo)/,
     answer: () =>
-      'Most people do well with a trim every 3–6 weeks — shorter fades and tight styles hold their shape best around every 3 weeks, while longer styles can often stretch to 6–8.',
+      'A la mayoría le va bien un corte cada 3-6 semanas — los fades y estilos muy cortos mantienen mejor su forma cada 3 semanas aproximadamente, mientras que los estilos más largos pueden aguantar 6-8 semanas.',
   },
   {
     id: 'beard_care',
-    pattern: /\b(maintain|care for|take care of)\b.*\bbeard\b|\bbeard\b.*\b(maintain|care)\b/,
+    pattern: /\b(mantener|cuidar)\b.*\bbarba\b|\bbarba\b.*\b(mantener|cuidado)\b/,
     answer: () =>
-      'Regular trims every 2–4 weeks keep a beard looking sharp, along with daily brushing and a beard oil or balm to keep it soft and healthy.',
+      'Recortarla cada 2-4 semanas mantiene la barba con buen aspecto, junto con cepillado diario y un aceite o bálsamo de barba para mantenerla suave y sana.',
   },
   {
     id: 'face_shape',
-    pattern: /\b(round|square|oval|long) face\b.*(haircut|style|suit)|(haircut|style).*\b(round|square|oval|long) face\b/,
+    pattern: /\bcara (redonda|cuadrada|ovalada|alargada)\b.*(corte|estilo|queda)|(corte|estilo).*\bcara (redonda|cuadrada|ovalada|alargada)\b/,
     answer: () =>
-      "It depends on the specific cut, but generally: rounder faces suit styles with more height on top, while angular faces can pull off shorter, textured cuts. Our barber can give you personalized advice in the chair.",
+      'Depende del corte concreto, pero en general: las caras más redondas favorecen estilos con más volumen arriba, mientras que las caras angulares lucen bien con cortes más cortos y con textura. Nuestro barbero te puede aconsejar en persona.',
   },
   {
     id: 'hair_health',
-    pattern: /\bhealthy hair\b|\bhair (falling out|loss)\b|\bdandruff\b/,
+    pattern: /\bpelo sano\b|\bcaida del pelo\b|\bse me cae el pelo\b|\bcaspa\b/,
     answer: () =>
-      "For healthier hair: wash a few times a week (not daily, which can dry it out), use a conditioner, and get regular trims to avoid split ends. For hair loss or dandruff concerns, it's worth chatting with a dermatologist too.",
+      'Para un pelo más sano: lávalo unas pocas veces por semana (no a diario, porque reseca), usa acondicionador y hazte cortes regulares para evitar puntas abiertas. Si te preocupa la caída del pelo o la caspa, también merece la pena consultar a un dermatólogo.',
   },
   {
     id: 'fade_types',
-    pattern: /\b(low|mid|high) fade\b|\btypes? of fades?\b/,
+    pattern: /\bfade (bajo|medio|alto)\b|\btipos? de fade\b/,
     answer: () =>
-      'The main fade heights are low (starts just above the ear, subtle), mid (starts around temple height, a good all-rounder), and high (starts higher up, more dramatic contrast). Tell your barber which look you\'re going for and they\'ll dial it in.',
+      'Las alturas de fade principales son bajo (empieza justo encima de la oreja, sutil), medio (empieza a la altura de la sien, un buen equilibrio) y alto (empieza más arriba, con más contraste). Dile a tu barbero qué estilo buscas y lo ajustará.',
   },
 
   {
     id: 'help',
-    pattern: /^\s*help\s*$/,
+    pattern: /^\s*ayuda\s*$/,
     answer: () =>
-      "I can help you book an appointment — just tell me what service you'd like, or ask about our hours, pricing, or location.",
+      'Puedo ayudarte a reservar una cita — solo dime qué servicio quieres, o pregúntame por nuestro horario, precios o ubicación.',
   },
 ];
 
 function normalize(text) {
-  return String(text || '').toLowerCase().trim();
+  return String(text || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim();
 }
 
 export function matchKnowledge(text) {

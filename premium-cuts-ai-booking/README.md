@@ -6,6 +6,12 @@ appointments into **Square Appointments** (via the Square API) — not a
 local database — so bookings show up in Square's own dashboard too, and
 persist independently of this app's hosting.
 
+**The customer-facing app (chat, manual form, and the assistant's own
+understanding of dates/times/services) is fully in Spanish** — built for a
+Barcelona-area shop, so the NLU also handles how Spanish speakers actually
+type it (dropped accents, "mañana" meaning both "tomorrow" and "morning",
+DD/MM date order, etc). The admin dashboard at `/admin` is Spanish too.
+
 ## Stack
 
 - **Backend:** Node.js + Express
@@ -13,11 +19,11 @@ persist independently of this app's hosting.
   backend (customers, services, team members, availability, appointments),
   not a custom database.
 - **Chat assistant:** a fully local, rule-based "mini AI" — no external LLM,
-  no API key, no quota, no billing — split across `src/nlu.js` (parsing/
-  detection), `src/knowledgeBase.js` (~20 FAQ + grooming-knowledge topics),
-  and `src/miniAiAgent.js` (conversation orchestration). It extracts *all*
-  the slots it can from a single message ("haircut tomorrow at 3pm, I'm
-  John, 555-1234" fills everything in one turn), tolerates typos, answers
+  no API key, no quota, no billing — split across `src/nlu.js` (Spanish
+  parsing/detection), `src/knowledgeBase.js` (~20 FAQ + grooming-knowledge
+  topics, in Spanish), and `src/miniAiAgent.js` (conversation orchestration).
+  It extracts *all* the slots it can from a single message ("corte de pelo
+  mañana a las 3, soy Juan, 699888777" fills everything in one turn), tolerates typos, answers
   a broad set of questions mid-conversation — shop logistics (hours,
   pricing, walk-ins, parking, payment, kids' cuts, cancellations) and real
   grooming advice (haircut frequency, beard care, fade types, face-shape
@@ -104,8 +110,9 @@ an example format rather than guessing.
 Square account the first time it runs:
 - Resolves your Square **location** (uses `SQUARE_LOCATION_ID` if you set
   one, otherwise your account's first location).
-- Checks for **Haircut**, **Beard Trim**, and **Both** as bookable services
-  in Square's Catalog — creates any that don't already exist.
+- Checks for **Corte de Pelo**, **Recorte de Barba**, and **Ambos** as
+  bookable services in Square's Catalog — creates any that don't already
+  exist.
 - Checks for an active **team member** at that location — creates a
   default one ("Alex Barber") if none exists.
 

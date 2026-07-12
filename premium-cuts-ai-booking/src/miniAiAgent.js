@@ -27,69 +27,76 @@ const SLOT_ORDER = ['service', 'date', 'time', 'name', 'phone'];
 
 const SLOT_PROMPTS = {
   service: [
-    'What would you like done — a Haircut, Beard Trim, or Both?',
-    'Sure thing — is it a Haircut, a Beard Trim, or Both today?',
+    '¿Qué te gustaría hacerte: Corte de Pelo, Recorte de Barba o Ambos?',
+    'Claro — ¿hoy Corte de Pelo, Recorte de Barba o Ambos?',
   ],
   date: [
-    'What day works for you? (e.g. "tomorrow", "Friday", or "July 10")',
-    'Great — what date would you like to come in?',
+    '¿Qué día te viene bien? (p. ej. "mañana", "viernes" o "10 de julio")',
+    'Genial — ¿qué fecha te gustaría venir?',
   ],
   time: [
-    'What time would you like? (e.g. "3pm" or "15:30")',
-    'And what time works best for you?',
+    '¿A qué hora te gustaría? (p. ej. "las 3 de la tarde" o "15:30")',
+    '¿Y qué hora te viene mejor?',
   ],
-  name: ['Can I get your name for the booking?', 'What name should I put this under?'],
+  name: ['¿Me dices tu nombre para la reserva?', '¿A nombre de quién pongo la cita?'],
   phone: [
-    "Lastly, what's the best phone number to reach you?",
-    'And a phone number in case we need to reach you?',
+    'Por último, ¿cuál es el mejor teléfono para contactarte?',
+    '¿Y un número de teléfono por si necesitamos contactarte?',
   ],
 };
 
-// Multiple variants per slot so repeated failures don't show the exact
-// same sentence over and over — cycled via a per-block retry counter
-// (see nextRetryCount), not just the global turn count.
+// Varias variantes por franja para que fallos repetidos no muestren
+// siempre la misma frase — se ciclan mediante un contador de reintentos
+// por bloqueo (ver nextRetryCount), no solo el contador global de turnos.
 const CLARIFY_PROMPTS = {
   service: [
-    "Sorry, I didn't catch that — is it a Haircut, Beard Trim, or Both?",
-    'Just to be clear: Haircut, Beard Trim, or Both?',
-    'Hmm, I need one of the three — Haircut, Beard Trim, or Both.',
+    'Perdona, no lo he pillado — ¿Corte de Pelo, Recorte de Barba o Ambos?',
+    'Para aclararlo: ¿Corte de Pelo, Recorte de Barba o Ambos?',
+    'Necesito uno de los tres — Corte de Pelo, Recorte de Barba o Ambos.',
   ],
   date: [
-    'Sorry, I didn\'t get a date from that — try something like "tomorrow", "Friday", or "July 10".',
-    'Still need a date — something like "next Tuesday" or "July 15" works.',
-    'Let\'s try that again — a day like "Saturday" or a date like "August 3" works.',
+    'Perdona, no he entendido la fecha — prueba algo como "mañana", "viernes" o "10 de julio".',
+    'Todavía necesito una fecha — algo como "el próximo martes" o "15 de julio" funciona.',
+    'Probemos otra vez — un día como "sábado" o una fecha como "3 de agosto" funciona.',
   ],
   time: [
-    'Sorry, I didn\'t get a time from that — try something like "3pm" or "15:30".',
-    'Just need a time — try "2:30pm" or "14:30".',
-    'Didn\'t catch a time there — something like "10am" works.',
+    'Perdona, no he entendido la hora — prueba algo como "las 3 de la tarde" o "15:30".',
+    'Solo necesito una hora — prueba "las 2 y media" o "14:30".',
+    'No he pillado la hora — algo como "las 10 de la mañana" funciona.',
   ],
   name: [
-    'Sorry, could you tell me your name again?',
-    "Didn't quite catch that — what's your name?",
+    '¿Me puedes repetir tu nombre?',
+    'No lo he pillado bien — ¿cuál es tu nombre?',
   ],
   phone: [
-    'Sorry, that didn\'t look like a phone number — could you send it again? e.g. 555-123-4567',
-    'Hmm, I need a valid phone number — something like 555-123-4567.',
+    'Perdona, eso no parece un número de teléfono — ¿me lo envías de nuevo? p. ej. 612 345 678',
+    'Necesito un número de teléfono válido — algo como 612 345 678.',
   ],
 };
 
 const VAGUE_TIME_PROMPTS = [
-  (period) => `${capitalize(period)} works! Could you give me a specific time, like 9am or 3:30pm?`,
-  (period) => `Great, ${period} it is — what specific time though? e.g. 10:30am.`,
+  (period) => `¡${capitalize(period)} genial! ¿Me puedes dar una hora concreta, como las 9 de la mañana o las 3:30 de la tarde?`,
+  (period) => `Vale, ${period} entonces — ¿pero qué hora exacta? p. ej. las 10:30.`,
 ];
 
 const PAST_DATE_MESSAGES = [
-  "That date's already passed — could you give me an upcoming date?",
-  "That one's in the past! What about a date coming up?",
-  "Looks like that date's behind us — could you pick a future date?",
+  'Esa fecha ya ha pasado — ¿me das una fecha próxima?',
+  '¡Esa es del pasado! ¿Qué tal una fecha que esté por llegar?',
+  'Parece que esa fecha ya quedó atrás — ¿puedes elegir una fecha futura?',
 ];
 
+// Días de la semana en español: lunes/martes/miércoles/jueves/viernes ya
+// son invariables en plural, pero sábado/domingo necesitan una "s".
+function pluralizeDayName(dayName) {
+  return dayName.endsWith('s') ? dayName : `${dayName}s`;
+}
+
 function closedDayMessages(dayName) {
+  const plural = pluralizeDayName(dayName);
   return [
-    `We're closed on ${dayName}s — could you pick another day? We're open ${SHOP_INFO.hoursText}.`,
-    `Ah, we don't open on ${dayName}s. Any other day work? We're open ${SHOP_INFO.hoursText}.`,
-    `${dayName}s are a no-go for us — how about a different day? We're open ${SHOP_INFO.hoursText}.`,
+    `Los ${plural} cerramos — ¿puedes elegir otro día? Abrimos ${SHOP_INFO.hoursText}.`,
+    `Ah, los ${plural} no abrimos. ¿Te viene bien otro día? Abrimos ${SHOP_INFO.hoursText}.`,
+    `Los ${plural} no son posibles — ¿qué tal otro día? Abrimos ${SHOP_INFO.hoursText}.`,
   ];
 }
 
@@ -107,10 +114,10 @@ function freshState() {
   };
 }
 
-// Tracks how many consecutive turns have failed to move past the same
-// blocker (the same slot repeatedly failing to parse, or the same kind of
-// date rejection repeating) so repeated messages can cycle through
-// different phrasing instead of showing the identical sentence every time.
+// Registra cuántos turnos consecutivos han fallado en superar el mismo
+// bloqueo (la misma franja fallando repetidamente al parsear, o el mismo
+// tipo de rechazo de fecha repitiéndose) para que los mensajes repetidos
+// puedan ciclar entre distintas frases en vez de mostrar siempre la misma.
 function nextRetryCount(state, blockKey) {
   if (state.blockKey === blockKey) {
     state.blockRetryCount = (state.blockRetryCount || 0) + 1;
@@ -128,29 +135,27 @@ function capitalize(str) {
 function formatDateForReply(iso) {
   if (!iso) return '—';
   const d = new Date(`${iso}T00:00:00`);
-  return d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+  return d.toLocaleDateString('es-ES', { weekday: 'long', month: 'long', day: 'numeric' });
 }
 
 function formatTimeForReply(time24) {
   if (!time24) return '—';
   const [h, m] = time24.split(':').map(Number);
-  const suffix = h >= 12 ? 'PM' : 'AM';
-  const h12 = h % 12 === 0 ? 12 : h % 12;
-  return `${h12}:${String(m).padStart(2, '0')} ${suffix}`;
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
 }
 
 function firstName(fullName) {
-  return String(fullName || '').trim().split(/\s+/)[0] || 'there';
+  return String(fullName || '').trim().split(/\s+/)[0] || '';
 }
 
 function buildSummary(slots) {
   return (
-    "Here's what I have:\n" +
-    `• Service: ${slots.service}\n` +
-    `• Date: ${formatDateForReply(slots.date)}\n` +
-    `• Time: ${formatTimeForReply(slots.time)}\n` +
-    `• Name: ${slots.name}\n` +
-    `• Phone: ${slots.phone}`
+    'Esto es lo que tengo:\n' +
+    `• Servicio: ${slots.service}\n` +
+    `• Fecha: ${formatDateForReply(slots.date)}\n` +
+    `• Hora: ${formatTimeForReply(slots.time)}\n` +
+    `• Nombre: ${slots.name}\n` +
+    `• Teléfono: ${slots.phone}`
   );
 }
 
@@ -160,27 +165,27 @@ function joinReply(interjection, mainReply) {
 
 function describeCaptured(slotsList, slots) {
   const labels = {
-    service: () => `service: ${slots.service}`,
-    date: () => `date: ${formatDateForReply(slots.date)}`,
-    time: () => `time: ${formatTimeForReply(slots.time)}`,
-    name: () => `name: ${slots.name}`,
-    phone: () => `phone: ${slots.phone}`,
+    service: () => `servicio: ${slots.service}`,
+    date: () => `fecha: ${formatDateForReply(slots.date)}`,
+    time: () => `hora: ${formatTimeForReply(slots.time)}`,
+    name: () => `nombre: ${slots.name}`,
+    phone: () => `teléfono: ${slots.phone}`,
   };
   const parts = slotsList.filter((slot) => labels[slot]).map((slot) => labels[slot]());
-  return parts.length > 0 ? `Got it — ${parts.join(', ')}.` : '';
+  return parts.length > 0 ? `Anotado — ${parts.join(', ')}.` : '';
 }
 
 function describeCorrection(appliedSlots, slots) {
   if (appliedSlots.length === 0) return '';
   const labels = {
-    service: () => `service to ${slots.service}`,
-    date: () => `date to ${formatDateForReply(slots.date)}`,
-    time: () => `time to ${formatTimeForReply(slots.time)}`,
-    name: () => `name to ${slots.name}`,
-    phone: () => `phone to ${slots.phone}`,
+    service: () => `el servicio a ${slots.service}`,
+    date: () => `la fecha al ${formatDateForReply(slots.date)}`,
+    time: () => `la hora a las ${formatTimeForReply(slots.time)}`,
+    name: () => `el nombre a ${slots.name}`,
+    phone: () => `el teléfono a ${slots.phone}`,
   };
   const parts = appliedSlots.map((slot) => labels[slot]());
-  return `Got it, updated the ${parts.join(' and ')}.`;
+  return `Hecho, he actualizado ${parts.join(' y ')}.`;
 }
 
 function validateDate(iso) {
@@ -192,7 +197,7 @@ function validateDate(iso) {
     return { ok: false, kind: 'past' };
   }
   if (isClosedOn(d)) {
-    return { ok: false, kind: 'closed', dayName: d.toLocaleDateString('en-US', { weekday: 'long' }) };
+    return { ok: false, kind: 'closed', dayName: d.toLocaleDateString('es-ES', { weekday: 'long' }) };
   }
   return { ok: true };
 }
@@ -203,11 +208,12 @@ function dateIssueMessage(validation, retryCount) {
   return '';
 }
 
-// Opportunistic multi-slot extraction, run on every message regardless of
-// what was last asked (service/date/time/phone have low false-positive
-// risk; name only via an explicit "I'm X" / "my name is X" style pattern
-// here — the permissive raw-text fallback lives in applyContextualFallback
-// and only runs when we specifically just asked for a name).
+// Extracción oportunista de varias franjas, ejecutada en cada mensaje sin
+// importar qué se preguntó por última vez (servicio/fecha/hora/teléfono
+// tienen poco riesgo de falso positivo; el nombre solo mediante un patrón
+// explícito tipo "soy X" / "me llamo X" aquí — el fallback permisivo sobre
+// texto en bruto vive en applyContextualFallback y solo se ejecuta cuando
+// justo acabamos de pedir un nombre).
 function processTurn(state, text, { allowCorrection }) {
   const appliedSlots = [];
   let dateIssue = null;
@@ -282,7 +288,7 @@ export function createChatAgent() {
     if (detectCancel(text)) {
       const fresh = { ...freshState(), lastAsked: 'service' };
       return {
-        reply: "No problem, let's start fresh. What would you like done — a Haircut, Beard Trim, or Both?",
+        reply: 'Sin problema, empecemos de nuevo. ¿Qué te gustaría hacerte: Corte de Pelo, Recorte de Barba o Ambos?',
         history: fresh,
       };
     }
@@ -296,18 +302,18 @@ export function createChatAgent() {
         if (result.success) {
           const reply = joinReply(
             interjection,
-            `You're all set, ${firstName(state.slots.name)}! ${state.slots.service} on ${formatDateForReply(state.slots.date)} at ${formatTimeForReply(state.slots.time)}. See you then!`
+            `¡Todo listo${firstName(state.slots.name) ? ', ' + firstName(state.slots.name) : ''}! ${state.slots.service} el ${formatDateForReply(state.slots.date)} a las ${formatTimeForReply(state.slots.time)}. ¡Nos vemos!`
           );
           return { reply, history: freshState() };
         }
         state.lastAsked = 'time';
         state.slots.time = null;
-        return { reply: joinReply(interjection, `${result.error} What time would you like instead?`), history: state };
+        return { reply: joinReply(interjection, `${result.error} ¿Qué hora prefieres en su lugar?`), history: state };
       }
 
       if (detectNegative(text) && !detectAffirmative(text)) {
         const fresh = { ...freshState(), lastAsked: 'service' };
-        return { reply: joinReply(interjection, "No problem — let's start over. What would you like done?"), history: fresh };
+        return { reply: joinReply(interjection, 'Sin problema — empecemos de nuevo. ¿Qué te gustaría hacerte?'), history: fresh };
       }
 
       const { appliedSlots, dateIssue } = processTurn(state, text, { allowCorrection: true });
@@ -318,10 +324,10 @@ export function createChatAgent() {
         return { reply: joinReply([interjection, capturedAck].filter(Boolean).join(' '), message), history: state };
       }
       if (appliedSlots.length > 0 || knowledgeMatch) {
-        return { reply: joinReply(interjection, `${buildSummary(state.slots)}\n\nDoes that look right?`), history: state };
+        return { reply: joinReply(interjection, `${buildSummary(state.slots)}\n\n¿Está todo correcto?`), history: state };
       }
 
-      return { reply: 'Sorry, just to confirm — should I go ahead and book that? (yes/no)', history: state };
+      return { reply: 'Perdona, solo para confirmar — ¿reservo la cita? (sí/no)', history: state };
     }
 
     const correctionIntent = detectCorrectionIntent(text);
@@ -329,12 +335,12 @@ export function createChatAgent() {
     const { appliedSlots, dateIssue } = processTurn(state, text, { allowCorrection: correctionIntent });
     const corrections = appliedSlots.filter((slot) => previouslyFilled.has(slot));
 
-    // Only fall back to "treat the raw text as whatever we just asked for"
-    // when nothing else was understood this turn — otherwise a correction
-    // like "actually make it Saturday instead" (which updates the date)
-    // would also get swallowed as the name/phone we happened to be asking
-    // about next.
-    if (state.lastAsked && !state.slots[state.lastAsked] && !dateIssue && appliedSlots.length === 0) {
+    // Solo recurrimos a "tratar el texto en bruto como lo que acabamos de
+    // preguntar" cuando no se ha entendido nada más este turno — si no, una
+    // corrección como "en realidad mejor el sábado" (que actualiza la
+    // fecha) también se tragaría como el nombre/teléfono que preguntábamos
+    // a continuación.
+    if (state.lastAsked && !state.slots[state.lastAsked] && !dateIssue && appliedSlots.length === 0 && !knowledgeMatch) {
       applyContextualFallback(state, text);
     }
 
@@ -342,7 +348,7 @@ export function createChatAgent() {
 
     if (!missing) {
       state.lastAsked = 'confirm';
-      return { reply: joinReply(interjection, `${buildSummary(state.slots)}\n\nDoes that look right?`), history: state };
+      return { reply: joinReply(interjection, `${buildSummary(state.slots)}\n\n¿Está todo correcto?`), history: state };
     }
 
     if (dateIssue) {
@@ -354,18 +360,18 @@ export function createChatAgent() {
     }
 
     const correctionAck = corrections.length > 0 ? describeCorrection(corrections, state.slots) : '';
-    // Slots that got filled this turn but aren't the one we're about to
-    // (re-)ask for — e.g. the customer gave a phone number while we're
-    // still stuck re-asking for a valid date. Without this, those get
-    // silently absorbed and the same question repeats with no sign
-    // anything was heard.
+    // Franjas que se rellenaron este turno pero no son la que estamos a
+    // punto de (re)preguntar — p. ej. el cliente da un teléfono mientras
+    // seguimos atascados repreguntando por una fecha válida. Sin esto,
+    // quedarían absorbidas en silencio y la misma pregunta se repetiría
+    // sin señal de que se ha entendido algo.
     const askedSlot = state.lastAsked;
     const freshBonus = appliedSlots.filter((slot) => slot !== askedSlot && !corrections.includes(slot));
     const freshAck = freshBonus.length > 0 ? describeCaptured(freshBonus, state.slots) : '';
-    // A pure FAQ/small-talk turn ("where are you located?") shouldn't count
-    // as a failed attempt to answer the slot question — the customer wasn't
-    // trying to answer it, so re-ask normally rather than with an
-    // "I didn't catch that" tone.
+    // Un turno de puro FAQ/charla informal ("¿dónde estáis?") no debería
+    // contar como un intento fallido de responder a la pregunta de la
+    // franja — el cliente no intentaba responderla, así que repreguntamos
+    // con normalidad en vez de con un tono de "no lo he entendido".
     const failedToExtract = askedSlot === missing && state.turnCount > 1 && appliedSlots.length === 0 && !knowledgeMatch;
 
     let prompt;

@@ -55,11 +55,11 @@
       .then(function (data) {
         typingBubble.remove();
         history = data.history || history;
-        appendBubble('assistant', data.reply || "Sorry, I didn't catch that.");
+        appendBubble('assistant', data.reply || 'Perdona, no lo he entendido.');
       })
       .catch(function () {
         typingBubble.remove();
-        appendBubble('error', "Sorry, something went wrong reaching the assistant. Please try again.");
+        appendBubble('error', 'Lo sentimos, algo ha ido mal al contactar con el asistente. Inténtalo de nuevo.');
       })
       .finally(function () {
         setBusy(false);

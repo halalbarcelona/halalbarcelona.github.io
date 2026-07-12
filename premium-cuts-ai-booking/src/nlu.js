@@ -1,16 +1,24 @@
-// Local, dependency-free natural-language helpers for the mini AI. Every
-// function here is a pure parser/detector — no network calls, no external
-// model. Kept separate from miniAiAgent.js so the parsing logic can be
-// tested and reasoned about on its own.
+// Local, dependency-free natural-language helpers for the mini AI — this
+// is the Spanish-language version, tuned for how Barcelona-area customers
+// actually type (accents often dropped, "mañana" doing double duty for
+// "tomorrow" and "morning", DD/MM date order). Every function here is a
+// pure parser/detector — no network calls, no external model.
 
-const WEEKDAYS = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+const WEEKDAYS = ['domingo', 'lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado'];
 const MONTHS = [
-  'january', 'february', 'march', 'april', 'may', 'june',
-  'july', 'august', 'september', 'october', 'november', 'december',
+  'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
+  'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre',
 ];
 
+// Lowercases and strips accents so "miércoles"/"miercoles" and
+// "sábado"/"sabado" both match — very common for customers to drop
+// accents when typing casually.
 export function normalize(text) {
-  return String(text || '').toLowerCase().trim();
+  return String(text || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim();
 }
 
 export function containsWord(text, word) {
@@ -41,32 +49,34 @@ function smartTitleCase(str) {
     .join(' ');
 }
 
-// ---------- Service ----------
+// ---------- Servicio ----------
 
-// Deliberately does not match a bare "hair" mention — that's too loose and
-// false-positives on questions like "do you cut kids hair" (a question,
-// not a service request). Requires an actual haircut-shaped phrase.
-const HAIRCUT_PATTERN = /hair ?cut|cut my hair|trim my hair/;
+// No intenta casar con un "pelo" suelto — es demasiado amplio y da falsos
+// positivos en preguntas como "¿cortáis el pelo a niños?" (una pregunta,
+// no una solicitud). Requiere una frase que realmente indique corte.
+const HAIRCUT_PATTERN = /\bcorte\b( de pelo)?|\bcortar(me)? el pelo\b/;
 
 export function extractService(text) {
   const t = normalize(text);
 
-  if (containsWord(t, 'both') || (HAIRCUT_PATTERN.test(t) && /beard/.test(t))) return 'Both';
-  if (/beard|shave|mustache|moustache/.test(t)) return 'Beard Trim';
-  if (HAIRCUT_PATTERN.test(t)) return 'Haircut';
+  if (containsWord(t, 'ambos') || containsWord(t, 'los dos') || (HAIRCUT_PATTERN.test(t) && /barba/.test(t))) {
+    return 'Ambos';
+  }
+  if (/barba|afeitad|bigote/.test(t)) return 'Recorte de Barba';
+  if (HAIRCUT_PATTERN.test(t)) return 'Corte de Pelo';
 
-  // Typo tolerance for common misspellings (e.g. "haircutt", "berad").
+  // Tolerancia a errores tipográficos comunes.
   const tokens = t.split(/\s+/);
   for (const tok of tokens) {
     if (tok.length < 4) continue;
-    if (levenshtein(tok, 'haircut') <= 2) return 'Haircut';
-    if (levenshtein(tok, 'beard') <= 2) return 'Beard Trim';
-    if (levenshtein(tok, 'both') <= 1) return 'Both';
+    if (levenshtein(tok, 'corte') <= 2) return 'Corte de Pelo';
+    if (levenshtein(tok, 'barba') <= 2) return 'Recorte de Barba';
+    if (levenshtein(tok, 'ambos') <= 1) return 'Ambos';
   }
   return null;
 }
 
-// ---------- Date ----------
+// ---------- Fecha ----------
 
 function startOfToday() {
   const d = new Date();
@@ -88,14 +98,16 @@ export function extractDate(text) {
   const t = normalize(text);
   const today = startOfToday();
 
-  if (/\bday after tomorrow\b/.test(t)) return isoDate(addDays(today, 2));
-  if (containsWord(t, 'today') || containsWord(t, 'tonight')) return isoDate(today);
-  if (containsWord(t, 'tomorrow')) return isoDate(addDays(today, 1));
+  if (/\bpasado manana\b/.test(t)) return isoDate(addDays(today, 2));
+  if (containsWord(t, 'hoy')) return isoDate(today);
+  // "manana" a secas = "tomorrow". La lectura de "por la mañana" (periodo
+  // del día) se maneja aparte en detectVagueTimePeriod / extractTime.
+  if (containsWord(t, 'manana')) return isoDate(addDays(today, 1));
 
-  const inDaysMatch = t.match(/\bin (\d+) days?\b/);
+  const inDaysMatch = t.match(/\ben (\d+) dias?\b/);
   if (inDaysMatch) return isoDate(addDays(today, Number(inDaysMatch[1])));
 
-  if (/\bthis weekend\b/.test(t)) {
+  if (/\beste finde\b|\beste fin de semana\b/.test(t)) {
     const dow = today.getDay();
     if (dow === 6 || dow === 0) return isoDate(today);
     return isoDate(addDays(today, (6 - dow + 7) % 7));
@@ -106,8 +118,8 @@ export function extractDate(text) {
     if (containsWord(t, day)) {
       const todayIdx = today.getDay();
       let diff = (i - todayIdx + 7) % 7;
-      if (diff === 0) diff = /next/.test(t) ? 7 : 0;
-      else if (/next/.test(t)) diff += 7;
+      if (diff === 0) diff = /proxim/.test(t) ? 7 : 0;
+      else if (/proxim/.test(t)) diff += 7;
       return isoDate(addDays(today, diff));
     }
   }
@@ -118,21 +130,24 @@ export function extractDate(text) {
     return isoDate(new Date(Number(y), Number(m) - 1, Number(d)));
   }
 
+  // Formato español: DD/MM(/AAAA), día antes que mes.
   const slashMatch = t.match(/\b(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?\b/);
   if (slashMatch) {
-    const [, mm, dd, yy] = slashMatch;
+    const [, dd, mm, yy] = slashMatch;
     const year = yy ? (yy.length === 2 ? 2000 + Number(yy) : Number(yy)) : today.getFullYear();
     return isoDate(new Date(year, Number(mm) - 1, Number(dd)));
   }
 
-  const ordinalCleaned = t.replace(/(\d{1,2})(st|nd|rd|th)\b/g, '$1');
+  const ordinalCleaned = t.replace(/(\d{1,2})(ro|do|to|er)\b/g, '$1');
   for (let i = 0; i < MONTHS.length; i += 1) {
     const month = MONTHS[i];
-    if (!ordinalCleaned.includes(month.slice(0, 3))) continue;
-    const monthFirst = ordinalCleaned.match(new RegExp(`${month}[a-z]*\\s+(\\d{1,2})(?:,?\\s+(\\d{4}))?`));
-    const dayFirst = ordinalCleaned.match(new RegExp(`(\\d{1,2})\\w*\\s+${month}(?:,?\\s+(\\d{4}))?`));
-    const dayNum = monthFirst ? Number(monthFirst[1]) : dayFirst ? Number(dayFirst[1]) : null;
-    const explicitYear = (monthFirst && monthFirst[2]) || (dayFirst && dayFirst[2]);
+    if (!ordinalCleaned.includes(month.slice(0, 4))) continue;
+    // "10 de julio" (día primero, forma más natural en español)
+    const dayFirst = ordinalCleaned.match(new RegExp(`(\\d{1,2})\\s+de\\s+${month}(?:\\s+de\\s+(\\d{4}))?`));
+    // "julio 10" (menos común, pero se admite)
+    const monthFirst = ordinalCleaned.match(new RegExp(`${month}\\s+(\\d{1,2})(?:,?\\s+(\\d{4}))?`));
+    const dayNum = dayFirst ? Number(dayFirst[1]) : monthFirst ? Number(monthFirst[1]) : null;
+    const explicitYear = (dayFirst && dayFirst[2]) || (monthFirst && monthFirst[2]);
     if (dayNum && dayNum >= 1 && dayNum <= 31) {
       if (explicitYear) {
         return isoDate(new Date(Number(explicitYear), i, dayNum));
@@ -147,46 +162,62 @@ export function extractDate(text) {
   return null;
 }
 
-// ---------- Time ----------
+// ---------- Hora ----------
 
 export function extractTime(text) {
   const t = normalize(text);
-  if (containsWord(t, 'noon')) return '12:00';
-  if (containsWord(t, 'midnight')) return '00:00';
+  if (containsWord(t, 'mediodia')) return '12:00';
+  if (containsWord(t, 'medianoche')) return '00:00';
 
-  const quarterTo = t.match(/quarter to (\d{1,2})/);
-  if (quarterTo) {
-    let h = Number(quarterTo[1]) - 1;
+  const menosCuarto = t.match(/(\d{1,2})\s*menos cuarto/);
+  if (menosCuarto) {
+    let h = Number(menosCuarto[1]) - 1;
     if (h < 0) h = 23;
     return `${String(h).padStart(2, '0')}:45`;
   }
-  const quarterPast = t.match(/quarter (?:past|after) (\d{1,2})/);
-  if (quarterPast) return `${String(Number(quarterPast[1])).padStart(2, '0')}:15`;
-  const halfPast = t.match(/half (?:past|after) (\d{1,2})/);
-  if (halfPast) return `${String(Number(halfPast[1])).padStart(2, '0')}:30`;
+  const yCuarto = t.match(/(\d{1,2})\s*y cuarto/);
+  if (yCuarto) return `${String(Number(yCuarto[1])).padStart(2, '0')}:15`;
+  const yMedia = t.match(/(\d{1,2})\s*y media/);
+  if (yMedia) return `${String(Number(yMedia[1])).padStart(2, '0')}:30`;
 
-  const m = t.match(/\b(\d{1,2})(?::(\d{2}))?\s*(am|pm)\b/) || t.match(/\b(\d{1,2}):(\d{2})\b/);
-  if (!m) return null;
+  // "3 de la tarde", "10 de la manana", "8 de la noche", con o sin minutos.
+  const withPeriod = t.match(/\b(\d{1,2})(?::(\d{2}))?\s*(?:de la |por la )?(manana|tarde|noche)\b/);
+  if (withPeriod) {
+    let hour = Number(withPeriod[1]);
+    const minute = withPeriod[2] ? Number(withPeriod[2]) : 0;
+    const period = withPeriod[3];
+    if (hour > 23 || minute > 59) return null;
+    if ((period === 'tarde' || period === 'noche') && hour < 12) hour += 12;
+    if (period === 'manana' && hour === 12) hour = 0;
+    return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+  }
 
-  let hour = Number(m[1]);
-  const minute = m[2] ? Number(m[2]) : 0;
-  const ampm = m[3];
-  if (hour > 23 || minute > 59) return null;
-  if (ampm === 'pm' && hour < 12) hour += 12;
-  if (ampm === 'am' && hour === 12) hour = 0;
+  // Formato de 24 horas explícito, "15:30".
+  const plain24 = t.match(/\b(\d{1,2}):(\d{2})\b/);
+  if (plain24) {
+    const hour = Number(plain24[1]);
+    const minute = Number(plain24[2]);
+    if (hour > 23 || minute > 59) return null;
+    return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+  }
 
-  return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+  return null;
 }
 
 export function detectVagueTimePeriod(text) {
   const t = normalize(text);
-  if (containsWord(t, 'morning')) return 'morning';
-  if (containsWord(t, 'afternoon')) return 'afternoon';
-  if (containsWord(t, 'evening')) return 'evening';
+  if (/\b(de la |por la |en la )?manana\b/.test(t) && !/\bpasado manana\b/.test(t)) {
+    // Solo cuenta como "periodo vago" si viene acompañada de "de/por/en la"
+    // — "mañana" a secas ya se interpretó como "tomorrow" en extractDate.
+    if (/\b(de la|por la|en la) manana\b/.test(t)) return 'la mañana';
+    return null;
+  }
+  if (/\b(de la|por la|en la) tarde\b/.test(t)) return 'la tarde';
+  if (/\b(de la|por la|en la) noche\b/.test(t)) return 'la noche';
   return null;
 }
 
-// ---------- Phone ----------
+// ---------- Teléfono ----------
 
 export function extractPhone(text) {
   const match = text.match(/(\+?\d[\d .\-()]{5,}\d)/);
@@ -196,14 +227,13 @@ export function extractPhone(text) {
   return match[1].trim();
 }
 
-// ---------- Name ----------
+// ---------- Nombre ----------
 
 const NAME_PATTERNS = [
-  /\bmy name is ([a-z][a-z' -]{1,40})/i,
-  /\bthis is ([a-z][a-z' -]{1,40})/i,
-  /\bi'?m ([a-z][a-z' -]{1,40})/i,
-  /\bcall me ([a-z][a-z' -]{1,40})/i,
-  /\bname'?s ([a-z][a-z' -]{1,40})/i,
+  /\bme llamo ([a-zA-ZñÑáéíóúÁÉÍÓÚ][a-zA-ZñÑáéíóúÁÉÍÓÚ' -]{1,40})/i,
+  /\bmi nombre es ([a-zA-ZñÑáéíóúÁÉÍÓÚ][a-zA-ZñÑáéíóúÁÉÍÓÚ' -]{1,40})/i,
+  /\bsoy ([a-zA-ZñÑáéíóúÁÉÍÓÚ][a-zA-ZñÑáéíóúÁÉÍÓÚ' -]{1,40})/i,
+  /\bllamame ([a-zA-ZñÑáéíóúÁÉÍÓÚ][a-zA-ZñÑáéíóúÁÉÍÓÚ' -]{1,40})/i,
 ];
 
 export function extractNameExplicit(text) {
@@ -219,18 +249,18 @@ export function extractNameExplicit(text) {
 
 export function extractNameFallback(text) {
   let cleaned = String(text || '').trim();
-  cleaned = cleaned.replace(/^(it'?s|i'?m|my name is|this is|i am|call me)\s+/i, '').trim();
+  cleaned = cleaned.replace(/^(me llamo|mi nombre es|soy|llamame)\s+/i, '').trim();
   if (!cleaned || cleaned.length > 60) return null;
   if (/^[\d\s\-().+]+$/.test(cleaned)) return null;
   return smartTitleCase(cleaned);
 }
 
-// ---------- Yes / no / cancel / correction ----------
+// ---------- Sí / no / cancelar / corrección ----------
 
-const AFFIRMATIVE_WORDS = ['yes', 'yeah', 'yep', 'yup', 'correct', 'confirm', 'confirmed', 'sure', 'ok', 'okay', 'perfect', 'great', 'yea', 'alright'];
-const AFFIRMATIVE_PHRASES = ['sounds good', 'that works', 'looks good', 'all good', 'go ahead'];
-const NEGATIVE_WORDS = ['no', 'nope', 'wrong', 'incorrect'];
-const NEGATIVE_PHRASES = ['not quite', "that's wrong", 'not right'];
+const AFFIRMATIVE_WORDS = ['si', 'vale', 'claro', 'correcto', 'confirmo', 'confirmado', 'perfecto', 'genial', 'exacto'];
+const AFFIRMATIVE_PHRASES = ['esta bien', 'de acuerdo', 'suena bien', 'me parece bien'];
+const NEGATIVE_WORDS = ['no', 'incorrecto', 'mal'];
+const NEGATIVE_PHRASES = ['no es correcto', 'no esta bien', 'eso esta mal'];
 
 export function detectAffirmative(text) {
   const t = normalize(text);
@@ -243,12 +273,12 @@ export function detectNegative(text) {
 }
 
 export function detectCancel(text) {
-  return /\b(cancel|start over|restart|never ?mind)\b/i.test(text);
+  return /\b(cancelar|cancelalo|empezar de nuevo|reiniciar|olvidalo)\b/i.test(normalize(text));
 }
 
 export function detectCorrectionIntent(text) {
-  return /\b(actually|wait|no i meant|change (it|that)|instead|make it|i meant)\b/i.test(text);
+  return /\b(en realidad|espera|mejor que sea|cambia(lo)?|quise decir|mejor)\b/i.test(normalize(text));
 }
 
-// Small talk / FAQ detection now lives in src/knowledgeBase.js
-// (matchKnowledge), which also owns the answer text for each topic.
+// La detección de FAQ/small-talk vive en src/knowledgeBase.js
+// (matchKnowledge), que también contiene el texto de cada respuesta.

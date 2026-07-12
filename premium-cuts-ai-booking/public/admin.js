@@ -8,7 +8,7 @@
     if (!isoString) return '—';
     var d = new Date(isoString.replace(' ', 'T') + 'Z');
     if (Number.isNaN(d.getTime())) return isoString;
-    return d.toLocaleString(undefined, {
+    return d.toLocaleString('es-ES', {
       month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit',
     });
   }
@@ -17,7 +17,7 @@
     if (!bookings.length) {
       table.hidden = true;
       emptyState.hidden = false;
-      emptyState.textContent = 'No bookings yet.';
+      emptyState.textContent = 'Todavía no hay reservas.';
       return;
     }
 
@@ -49,7 +49,7 @@
 
   function loadBookings() {
     emptyState.hidden = false;
-    emptyState.textContent = 'Loading bookings…';
+    emptyState.textContent = 'Cargando reservas…';
     table.hidden = true;
 
     fetch('/api/bookings')
@@ -61,7 +61,7 @@
       .catch(function () {
         table.hidden = true;
         emptyState.hidden = false;
-        emptyState.textContent = 'Could not load bookings. Please refresh.';
+        emptyState.textContent = 'No se pudieron cargar las reservas. Actualiza la página.';
       });
   }
 

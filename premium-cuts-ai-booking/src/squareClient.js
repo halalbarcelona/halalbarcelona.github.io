@@ -5,9 +5,9 @@ import { VALID_SERVICES } from './bookingValidation.js';
 // Keep these in sync with src/shopInfo.js — that's what the chat quotes
 // customers, this is what actually gets created in Square's catalog.
 const SERVICE_DEFINITIONS = {
-  Haircut: { description: 'Classic haircut, wash and style.', priceCents: 1800, durationMinutes: 30 },
-  'Beard Trim': { description: 'Beard shape-up and trim.', priceCents: 1000, durationMinutes: 15 },
-  Both: { description: 'Haircut and beard trim together.', priceCents: 2500, durationMinutes: 45 },
+  'Corte de Pelo': { description: 'Corte clásico, lavado y peinado.', priceCents: 1800, durationMinutes: 30 },
+  'Recorte de Barba': { description: 'Perfilado y recorte de barba.', priceCents: 1000, durationMinutes: 15 },
+  Ambos: { description: 'Corte de pelo y recorte de barba juntos.', priceCents: 2500, durationMinutes: 45 },
 };
 
 const DEFAULT_TEAM_MEMBER = { givenName: 'Alex', familyName: 'Barber' };
@@ -187,7 +187,7 @@ export async function createSquareBooking({ name, phone, service, date, time }) 
   const state = await ensureSetup();
   const serviceInfo = state.services[service];
   if (!serviceInfo) {
-    return { success: false, error: `Service "${service}" is not set up in Square yet.` };
+    return { success: false, error: `El servicio "${service}" todavía no está configurado en Square.` };
   }
 
   const startAt = combineDateTime(date, time);
@@ -215,7 +215,7 @@ export async function createSquareBooking({ name, phone, service, date, time }) 
   } catch (err) {
     if (err instanceof SquareError) {
       console.error('Square createBooking failed:', err.statusCode, err.body);
-      return { success: false, error: 'That time may not be available — please try a different date or time.' };
+      return { success: false, error: 'Puede que esa hora no esté disponible — prueba con otra fecha u hora.' };
     }
     throw err;
   }

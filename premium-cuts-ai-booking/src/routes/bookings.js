@@ -11,7 +11,7 @@ export function createBookingsRouter() {
       res.json(bookings);
     } catch (err) {
       console.error('Error in GET /api/bookings:', err);
-      res.status(500).json({ error: 'Could not load bookings.' });
+      res.status(500).json({ error: 'No se pudieron cargar las reservas.' });
     }
   });
 
@@ -35,7 +35,7 @@ export function createBookingsRouter() {
       res.status(201).json(result);
     } catch (err) {
       console.error('Error in POST /api/bookings:', err);
-      res.status(500).json({ error: 'The booking could not be saved. Please try again.' });
+      res.status(500).json({ error: 'No se pudo guardar la reserva. Inténtalo de nuevo.' });
     }
   });
 

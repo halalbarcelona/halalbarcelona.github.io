@@ -11,7 +11,7 @@ export function createChatRouter({ agent }) {
       res.json({ reply, history: updatedHistory });
     } catch (err) {
       console.error('Error in /api/chat:', err);
-      res.status(500).json({ error: 'Something went wrong. Please try again.' });
+      res.status(500).json({ error: 'Algo ha ido mal. Inténtalo de nuevo.' });
     }
   });
 

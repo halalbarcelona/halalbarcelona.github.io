@@ -14,17 +14,12 @@
   function formatDate(value) {
     if (!value) return '—';
     var d = new Date(value + 'T00:00:00');
-    return d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+    return d.toLocaleDateString('es-ES', { weekday: 'short', month: 'short', day: 'numeric' });
   }
 
   function formatTime(value) {
     if (!value) return '—';
-    var parts = value.split(':');
-    var h = parseInt(parts[0], 10);
-    var m = parts[1];
-    var suffix = h >= 12 ? 'PM' : 'AM';
-    var h12 = h % 12 === 0 ? 12 : h % 12;
-    return h12 + ':' + m + ' ' + suffix;
+    return value;
   }
 
   function showError(message) {
@@ -60,21 +55,21 @@
     })
       .then(function (res) {
         return res.json().then(function (data) {
-          if (!res.ok) throw new Error(data.error || 'Something went wrong.');
+          if (!res.ok) throw new Error(data.error || 'Algo ha ido mal.');
           return data;
         });
       })
       .then(function () {
         summaryEl.innerHTML =
-          '<dt>Service</dt><dd>' + service + '</dd>' +
-          '<dt>Date</dt><dd>' + formatDate(date) + '</dd>' +
-          '<dt>Time</dt><dd>' + formatTime(time) + '</dd>' +
-          '<dt>Name</dt><dd>' + (name || '—') + '</dd>';
+          '<dt>Servicio</dt><dd>' + service + '</dd>' +
+          '<dt>Fecha</dt><dd>' + formatDate(date) + '</dd>' +
+          '<dt>Hora</dt><dd>' + formatTime(time) + '</dd>' +
+          '<dt>Nombre</dt><dd>' + (name || '—') + '</dd>';
         form.hidden = true;
         successEl.hidden = false;
       })
       .catch(function (err) {
-        showError(err.message || 'Something went wrong. Please try again.');
+        showError(err.message || 'Algo ha ido mal. Inténtalo de nuevo.');
       })
       .finally(function () {
         submitBtn.disabled = false;
