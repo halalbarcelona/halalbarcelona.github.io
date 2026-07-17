@@ -1,0 +1,38 @@
+services:
+  - type: web
+    name: premium-cuts-ai-booking
+    runtime: node
+    rootDir: premium-cuts-ai-booking
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: SQUARE_ACCESS_TOKEN
+        sync: false
+      - key: SQUARE_ENVIRONMENT
+        value: sandbox
+
+  - type: web
+    name: ashworth-orders
+    runtime: node
+    rootDir: ashworth-orders
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: ADMIN_USER
+        value: admin
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: NOTIFY_EMAIL
+        sync: false
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        value: 587
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      - key: SMTP_FROM
+        sync: false

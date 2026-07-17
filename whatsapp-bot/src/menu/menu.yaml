@@ -1,0 +1,90 @@
+# ============================================================================
+# Machado Kebab menu — EDIT THIS FILE to update items, prices and descriptions.
+#
+# This is a PLACEHOLDER menu. Replace the example items below with your real
+# menu and prices, then commit + push (or redeploy on Render) for changes to
+# take effect — the bot reads this file when it starts up.
+#
+# Structure for each item:
+#   - id: a short unique code (letters/numbers/dashes, no spaces) — used
+#         internally, customers never see it.
+#   name: the item's display name, shown to customers.
+#   aliases: other ways a customer might type this item's name (helps the
+#            bot recognise it even with typos or nicknames). Optional.
+#   price: price in euros, e.g. 6.50 (always use a dot, not a comma).
+#   description: a short one-line description shown when a customer asks
+#                what something is.
+#   tags: optional labels like [spicy], [vegetarian], [popular] — purely
+#         informational, the bot can mention them if asked.
+# ============================================================================
+
+restaurant:
+  name: "Machado Döner Kebab & Pizzeria"
+  address: "Carrer de la Miranda 55, Cornellà de Llobregat, Barcelona"
+  hours: "Mon–Sun, 12:00–00:00" # EXAMPLE — update with your real hours
+  phone: "+34 600 000 000" # EXAMPLE — update with your real contact number
+
+categories:
+  - id: kebabs
+    name: "Kebabs"
+    items:
+      - id: kebab-pollo
+        name: "Kebab de Pollo"
+        aliases: ["chicken kebab", "kebab pollo", "pollo kebab"]
+        price: 6.50
+        description: "Grilled chicken doner with salad and sauce in pita bread."
+        tags: [popular]
+      - id: kebab-ternera
+        name: "Kebab de Ternera"
+        aliases: ["beef kebab", "kebab de carne", "ternera kebab"]
+        price: 7.00
+        description: "Grilled beef doner with salad and sauce in pita bread."
+        tags: []
+      - id: kebab-mixto
+        name: "Kebab Mixto"
+        aliases: ["mixed kebab", "kebab mixed", "mixto"]
+        price: 7.50
+        description: "Chicken and beef doner mix with salad and sauce."
+        tags: []
+
+  - id: pizzas
+    name: "Pizzas"
+    items:
+      - id: pizza-margarita
+        name: "Pizza Margarita"
+        aliases: ["margherita", "pizza margarita"]
+        price: 8.00
+        description: "Tomato, mozzarella and basil."
+        tags: [vegetarian]
+      - id: pizza-kebab
+        name: "Pizza Kebab"
+        aliases: ["kebab pizza"]
+        price: 9.50
+        description: "Kebab meat, cheese, tomato sauce and onions."
+        tags: [popular]
+
+  - id: drinks
+    name: "Bebidas / Drinks"
+    items:
+      - id: cocacola
+        name: "Coca-Cola"
+        aliases: ["coca cola", "cola", "coke"]
+        price: 2.00
+        description: "33cl can."
+        tags: []
+      - id: agua
+        name: "Agua"
+        aliases: ["water", "botella de agua"]
+        price: 1.50
+        description: "50cl bottle of water."
+        tags: []
+
+  - id: extras
+    name: "Extras"
+    items:
+      - id: patatas
+        name: "Patatas Fritas"
+        aliases: ["fries", "french fries", "papas fritas"]
+        price: 3.00
+        description: "Portion of french fries."
+        tags: [vegetarian]
