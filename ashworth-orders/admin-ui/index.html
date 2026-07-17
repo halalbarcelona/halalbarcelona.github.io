@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Ashworth — Orders Inbox</title>
+<link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+
+  <header class="site-header">
+    <div class="ashworth-mark">
+      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <rect class="ashworth-mark-stroke" x="5" y="5" width="14" height="14" rx="2" stroke-width="1.6" transform="rotate(45 12 12)"/>
+      </svg>
+      <span class="ashworth-wordmark">Ashworth</span>
+    </div>
+    <div class="header-divider"></div>
+    <span class="client-name">Orders Inbox</span>
+    <span class="header-tag">Admin</span>
+  </header>
+
+  <main>
+    <div class="admin-shell">
+      <div class="admin-card">
+        <div class="admin-card-header">
+          <h2>Requests</h2>
+          <button class="refresh-btn" id="refresh-btn">Refresh</button>
+        </div>
+        <div class="orders-list" id="orders-list" hidden></div>
+        <div class="empty-state" id="orders-empty">Loading requests…</div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <span class="footer-badge">Ashworth internal tool</span>
+  </footer>
+
+  <script src="/admin/admin.js"></script>
+</body>
+</html>

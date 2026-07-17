@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Ashworth — Request an App</title>
+<link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+
+  <header class="site-header">
+    <div class="ashworth-mark">
+      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <rect class="ashworth-mark-stroke" x="5" y="5" width="14" height="14" rx="2" stroke-width="1.6" transform="rotate(45 12 12)"/>
+      </svg>
+      <span class="ashworth-wordmark">Ashworth</span>
+    </div>
+    <div class="header-divider"></div>
+    <span class="client-name">Custom Apps &amp; AI Tools</span>
+    <span class="header-tag">Get a Quote</span>
+  </header>
+
+  <main>
+    <div style="width:100%; display:flex; flex-direction:column; align-items:center;">
+      <div class="page-intro">
+        <p class="eyebrow">Tell Us What You Need</p>
+        <h1>Request an App</h1>
+        <p>Booking systems, AI assistants, websites — tell us what you're building and we'll get back to you by email.</p>
+      </div>
+
+      <div class="form-shell" id="form-shell">
+        <form class="order-form" id="order-form" novalidate>
+          <div class="field-row">
+            <div class="field">
+              <label for="order-name">Your Name</label>
+              <input type="text" id="order-name" required>
+            </div>
+            <div class="field">
+              <label for="order-email">Email</label>
+              <input type="email" id="order-email" required>
+            </div>
+          </div>
+
+          <div class="field-row">
+            <div class="field">
+              <label for="order-phone">Phone (optional)</label>
+              <input type="tel" id="order-phone">
+            </div>
+            <div class="field">
+              <label for="order-business">Business Name (optional)</label>
+              <input type="text" id="order-business">
+            </div>
+          </div>
+
+          <div class="field-row">
+            <div class="field">
+              <label for="order-type">Project Type</label>
+              <select id="order-type">
+                <option value="">Not sure yet</option>
+                <option value="Booking / Scheduling App">Booking / Scheduling App</option>
+                <option value="AI Chat Assistant">AI Chat Assistant</option>
+                <option value="Website">Website</option>
+                <option value="Mobile App">Mobile App</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="order-budget">Budget (optional)</label>
+              <select id="order-budget">
+                <option value="">Prefer not to say</option>
+                <option value="Under €500">Under €500</option>
+                <option value="€500–1,500">€500–1,500</option>
+                <option value="€1,500–5,000">€1,500–5,000</option>
+                <option value="€5,000+">€5,000+</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="order-description">What do you need?</label>
+            <textarea id="order-description" rows="5" required placeholder="Describe what you're looking for…"></textarea>
+          </div>
+
+          <p class="form-error" id="order-error" hidden></p>
+          <button type="submit" class="confirm-btn" id="order-submit">Send Request</button>
+        </form>
+
+        <div class="manual-success" id="order-success" hidden>
+          <div class="modal-check">
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M4 12.5l5 5L20 6" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <h3>Request Sent!</h3>
+          <p>Thanks — we'll reply to your email soon.</p>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <span class="footer-badge">Ashworth — Custom Software</span>
+  </footer>
+
+  <script src="/order.js"></script>
+</body>
+</html>
