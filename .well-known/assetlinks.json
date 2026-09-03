@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.halalbarcelona.auratask",
+      "sha256_cert_fingerprints": [
+        "F9:90:2C:9E:3F:7B:3D:8E:A9:DC:D9:DB:0A:86:42:01:E6:50:0D:56:67:7E:F9:41:29:71:85:D3:AB:DA:46:F6"
+      ]
+    }
+  }
+]
