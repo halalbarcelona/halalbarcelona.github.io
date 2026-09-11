@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Loopwork Solutions</title>
+<meta name="description" content="Loopwork Solutions builds AI agents (chatbots, receptionists) and modern websites for small businesses.">
+
+<!-- Simple favicon: an inline SVG "loop" mark, no external file needed -->
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='35' cy='50' r='28' fill='none' stroke='%234f8cff' stroke-width='10'/%3E%3Ccircle cx='65' cy='50' r='28' fill='none' stroke='%23a06bff' stroke-width='10'/%3E%3C/svg%3E">
+
+<style>
+  :root {
+    --bg: #070b14;
+    --bg-alt: #0d1220;
+    --card: #11172a;
+    --border: #1e2740;
+    --text: #e6e9f2;
+    --text-dim: #9aa3b8;
+    --accent: #4f8cff;
+    --accent-2: #a06bff;
+  }
+
+  * { box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.6;
+  }
+
+  a { color: var(--accent); }
+
+  .container {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+
+  /* Nav */
+  nav {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: rgba(7, 11, 20, 0.85);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--border);
+  }
+
+  nav .container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 24px;
+  }
+
+  .logo {
+    font-weight: 700;
+    font-size: 1.1rem;
+    letter-spacing: 0.02em;
+  }
+
+  .logo span {
+    background: linear-gradient(90deg, var(--accent), var(--accent-2));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  nav .nav-cta {
+    display: inline-block;
+    padding: 8px 18px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, var(--accent), var(--accent-2));
+    color: #fff;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.9rem;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  nav .nav-cta:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(79, 140, 255, 0.35);
+  }
+
+  /* Hero */
+  header.hero {
+    padding: 100px 0 90px;
+    text-align: center;
+    background:
+      radial-gradient(circle at 20% 20%, rgba(79, 140, 255, 0.15), transparent 40%),
+      radial-gradient(circle at 80% 30%, rgba(160, 107, 255, 0.15), transparent 45%);
+  }
+
+  .hero h1 {
+    font-size: clamp(1.9rem, 4.5vw, 3.2rem);
+    margin: 0 0 20px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    background: linear-gradient(90deg, #fff, #c7d3f5);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .hero p.tagline {
+    max-width: 640px;
+    margin: 0 auto 36px;
+    font-size: 1.1rem;
+    color: var(--text-dim);
+  }
+
+  .btn-primary {
+    display: inline-block;
+    padding: 14px 32px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, var(--accent), var(--accent-2));
+    color: #fff;
+    text-decoration: none;
+    font-weight: 700;
+    font-size: 1rem;
+    border: none;
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .btn-primary:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 25px rgba(79, 140, 255, 0.4);
+  }
+
+  /* Sections */
+  section {
+    padding: 80px 0;
+  }
+
+  section h2 {
+    text-align: center;
+    font-size: clamp(1.5rem, 3vw, 2.1rem);
+    margin: 0 0 12px;
+  }
+
+  section p.section-sub {
+    text-align: center;
+    color: var(--text-dim);
+    max-width: 560px;
+    margin: 0 auto 48px;
+  }
+
+  /* What We Do cards */
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 28px;
+  }
+
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 32px;
+    transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+  }
+
+  .card:hover {
+    transform: translateY(-6px);
+    border-color: var(--accent);
+    box-shadow: 0 16px 40px rgba(79, 140, 255, 0.15);
+  }
+
+  .card .icon {
+    font-size: 1.8rem;
+    display: inline-flex;
+    width: 52px;
+    height: 52px;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px;
+    background: linear-gradient(135deg, rgba(79,140,255,0.2), rgba(160,107,255,0.2));
+    margin-bottom: 18px;
+  }
+
+  .card h3 {
+    margin: 0 0 10px;
+    font-size: 1.25rem;
+  }
+
+  .card p {
+    color: var(--text-dim);
+    margin: 0 0 14px;
+  }
+
+  .card ul {
+    margin: 0;
+    padding-left: 20px;
+    color: var(--text-dim);
+  }
+
+  .card ul li { margin-bottom: 6px; }
+
+  /* How It Works */
+  .steps {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 28px;
+  }
+
+  .step {
+    text-align: center;
+    padding: 20px;
+  }
+
+  .step .num {
+    width: 56px;
+    height: 56px;
+    margin: 0 auto 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: var(--bg-alt);
+    border: 1px solid var(--border);
+    color: var(--accent);
+    font-weight: 700;
+    font-size: 1.2rem;
+  }
+
+  .step h3 {
+    margin: 0 0 8px;
+    font-size: 1.1rem;
+  }
+
+  .step p {
+    color: var(--text-dim);
+    margin: 0;
+    font-size: 0.95rem;
+  }
+
+  .arrow {
+    display: none;
+  }
+
+  /* Waitlist / Consultation form */
+  #waitlist {
+    background: var(--bg-alt);
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+  }
+
+  form {
+    max-width: 560px;
+    margin: 0 auto;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 36px;
+  }
+
+  .field {
+    margin-bottom: 20px;
+  }
+
+  label {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 0.9rem;
+    color: var(--text-dim);
+  }
+
+  input, select, textarea {
+    width: 100%;
+    padding: 12px 14px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: #0a0f1c;
+    color: var(--text);
+    font-size: 0.95rem;
+    font-family: inherit;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  input:focus, select:focus, textarea:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(79, 140, 255, 0.2);
+  }
+
+  textarea {
+    min-height: 110px;
+    resize: vertical;
+  }
+
+  .submit-row {
+    text-align: center;
+    margin-top: 8px;
+  }
+
+  .submit-row .btn-primary {
+    width: 100%;
+    border: none;
+  }
+
+  .form-note {
+    text-align: center;
+    color: var(--text-dim);
+    font-size: 0.85rem;
+    margin-top: 16px;
+  }
+
+  #form-success {
+    display: none;
+    text-align: center;
+    color: #7be3a5;
+    font-weight: 600;
+    margin-top: 16px;
+  }
+
+  footer {
+    text-align: center;
+    padding: 32px 0;
+    color: var(--text-dim);
+    font-size: 0.85rem;
+  }
+
+  @media (max-width: 720px) {
+    .cards { grid-template-columns: 1fr; }
+    .steps { grid-template-columns: 1fr; }
+    header.hero { padding: 70px 0 60px; }
+    form { padding: 26px; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="container">
+    <div class="logo">Loop<span>work</span> Solutions</div>
+    <a class="nav-cta" href="#waitlist">Free Consultation</a>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="container">
+    <h1>Loopwork Solutions — AI Agents &amp; Websites for Your Business</h1>
+    <p class="tagline">We build the AI agents and websites small businesses need to save time, capture more leads, and never miss a customer again.</p>
+    <a href="#waitlist" class="btn-primary">Book Free Consultation</a>
+  </div>
+</header>
+
+<section id="what-we-do">
+  <div class="container">
+    <h2>What We Do</h2>
+    <p class="section-sub">Two ways we help your business run smoother and look sharper.</p>
+    <div class="cards">
+      <div class="card">
+        <div class="icon">🤖</div>
+        <h3>AI Agents</h3>
+        <p>Custom AI agents that handle the repetitive work so you don't have to.</p>
+        <ul>
+          <li>Chatbots &amp; virtual receptionists</li>
+          <li>Automated FAQ &amp; booking assistants</li>
+          <li>Smart auto-replies for email, SMS &amp; social</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="icon">🌐</div>
+        <h3>Websites</h3>
+        <p>Fast, modern websites built to turn visitors into customers.</p>
+        <ul>
+          <li>Clean, mobile-friendly design</li>
+          <li>Built for speed &amp; search visibility</li>
+          <li>Easy to update as your business grows</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="how-it-works">
+  <div class="container">
+    <h2>How It Works</h2>
+    <p class="section-sub">Getting started is simple — no tech experience needed.</p>
+    <div class="steps">
+      <div class="step">
+        <div class="num">1</div>
+        <h3>Tell Us What You Need</h3>
+        <p>Book a free consultation and walk us through your business and goals.</p>
+      </div>
+      <div class="step">
+        <div class="num">2</div>
+        <h3>We Build It</h3>
+        <p>Our team designs and builds your AI agent or website, tailored to you.</p>
+      </div>
+      <div class="step">
+        <div class="num">3</div>
+        <h3>You Go Live</h3>
+        <p>We launch, hand it over, and support you as your business grows.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="waitlist">
+  <div class="container">
+    <h2>Free Consultation</h2>
+    <p class="section-sub">Tell us a bit about your business and what you're looking for. We'll get back to you shortly.</p>
+
+    <!--
+      FORM SETUP (Formspree — free tier):
+      1. Go to https://formspree.io and sign up for a free account.
+      2. Create a new form and copy the form endpoint it gives you
+         (it looks like https://formspree.io/f/xxxxxxxx).
+      3. Replace "YOUR_FORM_ID" in the action attribute below with your
+         actual form ID. Submissions will then be emailed to whichever
+         address you verified with Formspree (e.g. imran.dcs@gmail.com).
+    -->
+    <form id="consult-form" action="https://formspree.io/f/YOUR_FORM_ID" method="POST">
+      <div class="field">
+        <label for="name">Name</label>
+        <input type="text" id="name" name="name" required>
+      </div>
+
+      <div class="field">
+        <label for="email">Email</label>
+        <input type="email" id="email" name="email" required>
+      </div>
+
+      <div class="field">
+        <label for="business">Business name (optional)</label>
+        <input type="text" id="business" name="business">
+      </div>
+
+      <div class="field">
+        <label for="agent-type">What kind of AI agent do you want?</label>
+        <select id="agent-type" name="agent_type">
+          <option value="">Select an option</option>
+          <option value="Receptionist/FAQ bot">Receptionist / FAQ bot</option>
+          <option value="Booking assistant">Booking assistant</option>
+          <option value="Order/Invoice automation">Order / Invoice automation</option>
+          <option value="Website chatbot">Website chatbot</option>
+          <option value="Other">Other</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label for="details">Tell us more</label>
+        <textarea id="details" name="details" placeholder="What are you hoping to automate or build?"></textarea>
+      </div>
+
+      <div class="submit-row">
+        <button type="submit" class="btn-primary">Book Free Consultation</button>
+      </div>
+
+      <p id="form-success">Thanks! We'll be in touch soon.</p>
+      <p class="form-note">We'll never share your information. No spam, ever.</p>
+    </form>
+  </div>
+</section>
+
+<footer>
+  <div class="container">
+    &copy; <span id="year"></span> Loopwork Solutions. All rights reserved.
+  </div>
+</footer>
+
+<script>
+  document.getElementById('year').textContent = new Date().getFullYear();
+
+  // Optional: show an inline "thanks" message after submit instead of
+  // navigating away. Formspree will still receive and email the data;
+  // this just improves the on-page experience if AJAX submission works.
+  var form = document.getElementById('consult-form');
+  form.addEventListener('submit', function (e) {
+    if (form.action.indexOf('YOUR_FORM_ID') !== -1) {
+      // Form ID hasn't been configured yet — let it submit normally
+      // (Formspree will show its own error page) rather than pretend it worked.
+      return;
+    }
+    e.preventDefault();
+    var data = new FormData(form);
+    fetch(form.action, {
+      method: 'POST',
+      body: data,
+      headers: { Accept: 'application/json' }
+    })
+      .then(function (response) {
+        if (response.ok) {
+          form.reset();
+          document.getElementById('form-success').style.display = 'block';
+        } else {
+          alert('Something went wrong. Please try again.');
+        }
+      })
+      .catch(function () {
+        alert('Something went wrong. Please try again.');
+      });
+  });
+</script>
+
+</body>
+</html>
